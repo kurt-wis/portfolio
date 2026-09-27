@@ -15,6 +15,7 @@ import Footer from './components/Footer'
 import CommandPalette from './components/CommandPalette'
 import CommandTrigger from './components/CommandTrigger'
 import NotFound from './pages/NotFound'
+import CursorBuddy from './components/CursorBuddy'
 
 function HomePage() {
   return (
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <CursorBuddy onOpenCommand={() => setCommandOpen(true)} />
       <CommandTrigger onOpen={() => setCommandOpen(true)} />
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
     </>
