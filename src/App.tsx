@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import BackgroundGrain from './components/BackgroundGrain'
 import ScrollProgress from './components/ScrollProgress'
 import Navbar from './components/Navbar'
@@ -15,6 +15,7 @@ import Footer from './components/Footer'
 import CommandPalette from './components/CommandPalette'
 import CommandTrigger from './components/CommandTrigger'
 import NotFound from './pages/NotFound'
+import AdminWall from './pages/AdminWall'
 import CursorBuddy from './components/CursorBuddy'
 
 function HomePage() {
@@ -40,6 +41,8 @@ function HomePage() {
 
 export default function App() {
   const [commandOpen, setCommandOpen] = useState(false)
+  const location = useLocation()
+  const isAdminPage = location.pathname === '/admin-wall'
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -58,11 +61,16 @@ export default function App() {
     <>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/admin-wall" element={<AdminWall />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <CursorBuddy onOpenCommand={() => setCommandOpen(true)} />
-      <CommandTrigger onOpen={() => setCommandOpen(true)} />
-      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+      {!isAdminPage && (
+        <>
+          <CursorBuddy onOpenCommand={() => setCommandOpen(true)} />
+          <CommandTrigger onOpen={() => setCommandOpen(true)} />
+          <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+        </>
+      )}
     </>
   )
 }

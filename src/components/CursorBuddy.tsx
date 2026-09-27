@@ -24,12 +24,40 @@ const PHRASES = [
 ]
 
 const GREETING = 'oh you are back'
+const COOLDOWN_MS = 60000
+const COOLDOWN_STORAGE_KEY = 'lastPostAt'
+
+const THANK_YOU_PHRASES = [
+  'thanks for the note!',
+  'noted! appreciate it',
+  'thanks! that made my day',
+  'got it, thank you!',
+  'signed and sealed, thanks!',
+  'thanks for stopping by!',
+]
+
+const COOLDOWN_PHRASES = [
+  'slow down! wait {s}s',
+  'calm down, {s}s left',
+  'patience! {s}s more',
+  'one at a time, {s}s',
+  'not so fast! {s}s',
+  'easy there, {s}s left',
+]
 
 interface Note {
   id: string;
   text: string;
   color: string;
   timestamp: Timestamp | null;
+}
+
+const getInitialCooldown = () => {
+  if (typeof window === 'undefined') return 0;
+  const lastPost = localStorage.getItem(COOLDOWN_STORAGE_KEY);
+  if (!lastPost) return 0;
+  const elapsed = Date.now() - parseInt(lastPost, 10);
+  return Math.max(0, Math.ceil((COOLDOWN_MS - elapsed) / 1000));
 }
 
 export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => void }) {
@@ -41,6 +69,7 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
   const lastMove = useRef<number>(Date.now())
   const wasSleeping = useRef(false)
   const sleepAudioRef = useRef<HTMLAudioElement | null>(null)
+  const manualPhraseRef = useRef(false)
 
   const [isPromptOpen, setIsPromptOpen] = useState(false)
   const [isWallOpen, setIsWallOpen] = useState(false)
@@ -48,6 +77,7 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
   const [notes, setNotes] = useState<Note[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingNotes, setIsLoadingNotes] = useState(false)
+  const [cooldownRemaining, setCooldownRemaining] = useState(getInitialCooldown)
 
   const playSound = (soundName: string) => {
     const audio = new Audio(`/sounds/${soundName}.mp3`);
@@ -80,6 +110,17 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
     window.setTimeout(() => setMood('idle'), 900)
   }
 
+  const sayPhrase = (message: string, duration = 3200) => {
+    manualPhraseRef.current = true
+    setPhrase(message)
+    setShowBubble(true)
+    pickMood()
+    window.setTimeout(() => {
+      setShowBubble(false)
+      manualPhraseRef.current = false
+    }, duration)
+  }
+
   useEffect(() => {
     if (isSleeping || isWallOpen || isPromptOpen) {
       setShowBubble(false)
@@ -89,10 +130,12 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
     const loop = () => {
       const delay = 4000 + Math.random() * 3500
       timeout = window.setTimeout(() => {
-        setPhrase(pickPhrase())
-        setShowBubble(true)
-        pickMood()
-        window.setTimeout(() => setShowBubble(false), 3200)
+        if (!manualPhraseRef.current) {
+          setPhrase(pickPhrase())
+          setShowBubble(true)
+          pickMood()
+          window.setTimeout(() => setShowBubble(false), 3200)
+        }
         loop()
       }, delay)
     }
@@ -108,30 +151,47 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
         setIsSleeping(false)
         stopSleepSound()
         playSound('wake')
-        setPhrase(GREETING)
-        setShowBubble(true)
-        pickMood()
-        window.setTimeout(() => setShowBubble(false), 2600)
+        sayPhrase(GREETING, 2600)
       }
     }
     window.addEventListener('mousemove', onMove)
-    return () => window.removeEventListener('mousemove', onMove)
+    window.addEventListener('scroll', onMove, { passive: true })
+    window.addEventListener('keydown', onMove)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('scroll', onMove)
+      window.removeEventListener('keydown', onMove)
+    }
   }, [])
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      if (Date.now() - lastMove.current > 15000) {
-        if (!wasSleeping.current) startSleepSound()
+      if (wasSleeping.current) return
+      if (Date.now() - lastMove.current >= 15000) {
+        startSleepSound()
         setIsSleeping(true)
         wasSleeping.current = true
       }
-    }, 5000)
+    }, 1000)
     return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
     return () => stopSleepSound();
   }, [])
+
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+    const interval = setInterval(() => {
+      setCooldownRemaining(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldownRemaining > 0]);
+
+  useEffect(() => {
+    if (!isPromptOpen) return;
+    setCooldownRemaining(getInitialCooldown());
+  }, [isPromptOpen]);
 
   useEffect(() => {
     if (!isWallOpen) return;
@@ -165,6 +225,19 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
     const text = noteText.trim();
     if (!text || !userId) return;
 
+    const lastPost = localStorage.getItem(COOLDOWN_STORAGE_KEY);
+    if (lastPost) {
+      const elapsed = Date.now() - parseInt(lastPost, 10);
+      if (elapsed < COOLDOWN_MS) {
+        const seconds = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+        setCooldownRemaining(seconds);
+        setIsPromptOpen(false);
+        const template = COOLDOWN_PHRASES[Math.floor(Math.random() * COOLDOWN_PHRASES.length)];
+        sayPhrase(template.replace('{s}', String(seconds)), 3000);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     const colors = ["#FFE066", "#FF8FA3", "#A0D2EB", "#B5EAD7", "#D4A5FF", "#FFB347"];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
@@ -176,11 +249,16 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
         userId: userId,
         timestamp: serverTimestamp(),
       });
+      localStorage.setItem(COOLDOWN_STORAGE_KEY, Date.now().toString());
+      setCooldownRemaining(60);
       setNoteText('');
       setIsPromptOpen(false);
+      const thanks = THANK_YOU_PHRASES[Math.floor(Math.random() * THANK_YOU_PHRASES.length)];
+      sayPhrase(thanks, 3200);
+      playSound('pop');
     } catch (error) {
       console.error("Error writing note: ", error);
-      alert("Oops! Something went wrong.");
+      sayPhrase('oops! something broke', 3200);
     }
     setIsSubmitting(false);
   };
@@ -228,7 +306,9 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
           />
           
           <div className="flex justify-between items-center mt-2">
-            <span className="text-xs text-gray-400 dark:text-gray-500">{noteText.length}/140</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              {cooldownRemaining > 0 ? `wait ${cooldownRemaining}s` : `${noteText.length}/140`}
+            </span>
             <div className="flex gap-2">
               <button 
                 onClick={() => { setIsPromptOpen(false); setIsWallOpen(true); }}
@@ -239,9 +319,13 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
               <button 
                 onClick={handleSubmitNote}
                 disabled={isSubmitting || noteText.trim().length === 0}
-                className="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black text-xs font-semibold rounded-md hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors min-w-[52px] border ${
+                  cooldownRemaining > 0
+                    ? 'bg-transparent border-dashed border-gray-400 dark:border-zinc-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
+                    : 'bg-black dark:bg-white border-transparent text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50'
+                }`}
               >
-                {isSubmitting ? '...' : 'Post'}
+                {isSubmitting ? '...' : cooldownRemaining > 0 ? `${cooldownRemaining}s` : 'Post'}
               </button>
             </div>
           </div>
@@ -250,7 +334,7 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
         <div className="relative pointer-events-auto">
           
           <div className={`absolute bottom-full right-0 mb-3 bg-black dark:bg-white text-white dark:text-black text-xs px-3 py-2 rounded-lg whitespace-nowrap pointer-events-none shadow-md z-50 transition-all duration-300 ease-out ${
-            showBubble && phrase && !isWallOpen && !isPromptOpen 
+            showBubble && phrase && !isWallOpen 
               ? 'opacity-100 translate-y-0 scale-100' 
               : 'opacity-0 translate-y-2 scale-95'
           }`}>
@@ -340,4 +424,4 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
       )}
     </>
   )
-} 
+}
