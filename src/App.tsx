@@ -66,7 +66,7 @@ export default function App() {
       </Routes>
       {!isAdminPage && (
         <>
-          <CursorBuddy onOpenCommand={() => setCommandOpen(true)} />
+          <CursorBuddy />
           <CommandTrigger onOpen={() => setCommandOpen(true)} />
           <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
         </>

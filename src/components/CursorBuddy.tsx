@@ -60,11 +60,10 @@ const getInitialCooldown = () => {
   return Math.max(0, Math.ceil((COOLDOWN_MS - elapsed) / 1000));
 }
 
-export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => void }) {
+export default function CursorBuddy() {
   const [phrase, setPhrase] = useState('')
   const [showBubble, setShowBubble] = useState(false)
   const [isSleeping, setIsSleeping] = useState(false)
-  const [mood, setMood] = useState<'idle' | 'bounce' | 'wiggle' | 'pop'>('idle')
   const [userId, setUserId] = useState<string | null>(null)
   const lastMove = useRef<number>(Date.now())
   const wasSleeping = useRef(false)
@@ -104,17 +103,10 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
 
   const pickPhrase = () => PHRASES[Math.floor(Math.random() * PHRASES.length)]
 
-  const pickMood = () => {
-    const moods: Array<'bounce' | 'wiggle' | 'pop'> = ['bounce', 'wiggle', 'pop']
-    setMood(moods[Math.floor(Math.random() * moods.length)])
-    window.setTimeout(() => setMood('idle'), 900)
-  }
-
   const sayPhrase = (message: string, duration = 3200) => {
     manualPhraseRef.current = true
     setPhrase(message)
     setShowBubble(true)
-    pickMood()
     window.setTimeout(() => {
       setShowBubble(false)
       manualPhraseRef.current = false
@@ -133,7 +125,6 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
         if (!manualPhraseRef.current) {
           setPhrase(pickPhrase())
           setShowBubble(true)
-          pickMood()
           window.setTimeout(() => setShowBubble(false), 3200)
         }
         loop()
