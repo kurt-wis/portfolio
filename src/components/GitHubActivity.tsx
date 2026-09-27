@@ -18,12 +18,13 @@ export default function GitHubActivity() {
   const { theme } = useTheme()
   const [data, setData] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [blockSize, setBlockSize] = useState(13)
   const [blockMargin, setBlockMargin] = useState(4)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetch('https://github-contributions-api.jogruber.de/v4/wwwwwis?y=last')
+    fetch('https://github-contributions-api.jogruber.de/v4/kurt-wis?y=last')
       .then((res) => res.json())
       .then((json) => {
         const sorted = [...json.contributions].sort(
@@ -35,7 +36,10 @@ export default function GitHubActivity() {
         setData(filtered)
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => {
+        setError(true)
+        setLoading(false)
+      })
   }, [])
 
   useEffect(() => {
@@ -71,6 +75,10 @@ export default function GitHubActivity() {
           <div className="rounded-2xl border border-line bg-bg-soft p-6 sm:p-8">
             {loading ? (
               <div className="h-[160px] w-full animate-pulse rounded-lg bg-bg-soft-2" />
+            ) : error ? (
+              <p className="text-center text-sm text-ink-soft py-10">
+                Couldn't load GitHub activity right now.
+              </p>
             ) : (
               <div
                 ref={containerRef}

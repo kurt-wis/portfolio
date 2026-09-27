@@ -7,7 +7,7 @@ import type {
 } from '@/types'
 
 export const socials: SocialLink[] = [
-  { label: 'GitHub', href: 'https://github.com/wwwwwis/', icon: 'github' },
+  { label: 'GitHub', href: 'https://github.com/kurt-wis/', icon: 'github' },
   {
     label: 'LinkedIn',
     href: 'https://www.linkedin.com/in/grape-kurtluis',
@@ -35,7 +35,7 @@ export const projects: Project[] = [
       "People's Choice Award",
     ],
     url: 'https://etickette.web.app/',
-    repo: 'https://github.com/wwwwwis/etickette',
+    repo: 'https://github.com/kurt-wis/etickette',
     image: '/etickette.png',
   },
 ]
