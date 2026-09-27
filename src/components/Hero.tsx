@@ -10,7 +10,7 @@ export default function Hero() {
   const [hasHovered, setHasHovered] = useState(false)
 
   return (
-    <section className="relative z-[1] pb-10 pt-16 sm:pt-20">
+    <section id ="hero" className="relative z-[1] pb-10 pt-16 sm:pt-20">
       <div className="mx-auto grid max-w-wrap grid-cols-1 gap-12 px-6 sm:px-12 lg:grid-cols-[1fr_460px] lg:gap-16">
         <div>
           <div className="mb-9 inline-flex items-center gap-2 text-[13px] uppercase tracking-wider text-ink-soft">

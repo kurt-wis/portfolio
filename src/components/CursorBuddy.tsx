@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { 
   collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, Timestamp 
 } from 'firebase/firestore'
-import { db } from '../firebase'
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth'
+import { db, auth } from '../firebase'
 
 const PHRASES = [
   'npm install hire-me',
@@ -36,14 +37,40 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
   const [showBubble, setShowBubble] = useState(false)
   const [isSleeping, setIsSleeping] = useState(false)
   const [mood, setMood] = useState<'idle' | 'bounce' | 'wiggle' | 'pop'>('idle')
+  const [userId, setUserId] = useState<string | null>(null)
   const lastMove = useRef<number>(Date.now())
   const wasSleeping = useRef(false)
+  const sleepAudioRef = useRef<HTMLAudioElement | null>(null)
 
   const [isPromptOpen, setIsPromptOpen] = useState(false)
   const [isWallOpen, setIsWallOpen] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [notes, setNotes] = useState<Note[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoadingNotes, setIsLoadingNotes] = useState(false)
+
+  const playSound = (soundName: string) => {
+    const audio = new Audio(`/sounds/${soundName}.mp3`);
+    audio.volume = 0.3;
+    audio.play().catch(() => {});
+  }
+
+  const startSleepSound = () => {
+    if (sleepAudioRef.current) return;
+    const audio = new Audio('/sounds/sleep.mp3');
+    audio.volume = 0.3;
+    audio.loop = true;
+    audio.play().catch(() => {});
+    sleepAudioRef.current = audio;
+  }
+
+  const stopSleepSound = () => {
+    if (sleepAudioRef.current) {
+      sleepAudioRef.current.pause();
+      sleepAudioRef.current.currentTime = 0;
+      sleepAudioRef.current = null;
+    }
+  }
 
   const pickPhrase = () => PHRASES[Math.floor(Math.random() * PHRASES.length)]
 
@@ -79,6 +106,8 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
       if (wasSleeping.current) {
         wasSleeping.current = false
         setIsSleeping(false)
+        stopSleepSound()
+        playSound('wake')
         setPhrase(GREETING)
         setShowBubble(true)
         pickMood()
@@ -92,6 +121,7 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
   useEffect(() => {
     const interval = window.setInterval(() => {
       if (Date.now() - lastMove.current > 15000) {
+        if (!wasSleeping.current) startSleepSound()
         setIsSleeping(true)
         wasSleeping.current = true
       }
@@ -100,7 +130,12 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
   }, [])
 
   useEffect(() => {
+    return () => stopSleepSound();
+  }, [])
+
+  useEffect(() => {
     if (!isWallOpen) return;
+    setIsLoadingNotes(true);
 
     const q = query(collection(db, 'notes'), orderBy('timestamp', 'desc'), limit(100));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -109,14 +144,26 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
         fetchedNotes.push({ id: doc.id, ...doc.data() } as Note);
       });
       setNotes(fetchedNotes);
+      setIsLoadingNotes(false);
     });
 
     return () => unsubscribe();
   }, [isWallOpen]);
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserId(user.uid);
+      } else {
+        signInAnonymously(auth).catch((error) => console.error("Auth error:", error));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleSubmitNote = async () => {
     const text = noteText.trim();
-    if (!text) return;
+    if (!text || !userId) return;
 
     setIsSubmitting(true);
     const colors = ["#FFE066", "#FF8FA3", "#A0D2EB", "#B5EAD7", "#D4A5FF", "#FFB347"];
@@ -126,7 +173,8 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
       await addDoc(collection(db, 'notes'), {
         text: text,
         color: randomColor,
-        timestamp: serverTimestamp()
+        userId: userId,
+        timestamp: serverTimestamp(),
       });
       setNoteText('');
       setIsPromptOpen(false);
@@ -138,6 +186,7 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
   };
 
   const handleMascotClick = () => {
+    playSound('pop');
     setIsPromptOpen(!isPromptOpen);
   };
 
@@ -156,7 +205,6 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
       
       <div className="cursor-buddy-root fixed bottom-6 right-6 z-[9999] flex flex-col items-end pointer-events-none">
         
-        {/* Prompt Box */}
         <div className={`w-[calc(100vw-3rem)] max-w-[20rem] sm:w-72 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-gray-100 dark:border-zinc-800 p-4 mb-4 transition-all duration-300 ease-out origin-bottom-right pointer-events-auto ${
           isPromptOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'
         }`}>
@@ -199,10 +247,8 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
           </div>
         </div>
 
-        {/* Mascot Wrapper */}
         <div className="relative pointer-events-auto">
           
-          {/* Speech Bubble */}
           <div className={`absolute bottom-full right-0 mb-3 bg-black dark:bg-white text-white dark:text-black text-xs px-3 py-2 rounded-lg whitespace-nowrap pointer-events-none shadow-md z-50 transition-all duration-300 ease-out ${
             showBubble && phrase && !isWallOpen && !isPromptOpen 
               ? 'opacity-100 translate-y-0 scale-100' 
@@ -212,7 +258,6 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
             <div className="absolute -bottom-1 right-4 w-2 h-2 bg-black dark:bg-white rotate-45"></div>
           </div>
 
-          {/* Mascot Button - Hover only */}
           <button
             onClick={handleMascotClick}
             className="cursor-buddy relative w-24 h-24 flex items-center justify-center pointer-events-auto transition-transform duration-200 hover:scale-105"
@@ -223,7 +268,6 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
                 <div className="relative w-full h-full">
                   <img src="/mascot-sleeping.svg" alt="" className="cursor-buddy-base w-full h-full object-contain" draggable={false} />
                   
-                  {/* Horizontal Zzz */}
                   <div className="absolute -top-4 -right-6 flex flex-row items-end gap-1">
                     <span className="text-xl font-bold text-gray-400 dark:text-gray-500 animate-float-zzz" style={{ animationDelay: '0s' }}>Z</span>
                     <span className="text-lg font-bold text-gray-400 dark:text-gray-500 animate-float-zzz" style={{ animationDelay: '0.3s' }}>z</span>
@@ -238,7 +282,6 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
         </div>
       </div>
 
-      {/* Full Wall Overlay */}
       {isWallOpen && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] flex justify-center items-center p-4 transition-opacity duration-300"
@@ -262,33 +305,39 @@ export default function CursorBuddy({ onOpenCommand }: { onOpenCommand: () => vo
             </div>
             
             <div className="p-6 overflow-y-auto flex-grow">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {notes.length === 0 ? (
-                  <p className="col-span-full text-center text-gray-400 py-10">No notes yet. Be the first!</p>
-                ) : (
-                  notes.map((note) => {
-                    const rotation = (Math.random() * 6) - 3;
-                    return (
-                      <div 
-                        key={note.id}
-                        style={{ backgroundColor: note.color, transform: `rotate(${rotation}deg)` }}
-                        className="p-4 rounded shadow-md flex flex-col justify-between min-h-[120px] transition-transform duration-300 hover:scale-105 hover:rotate-0 hover:z-10 text-black"
-                      >
-                        <div className="text-sm font-medium text-gray-800 break-words">
-                          {note.text}
+              {isLoadingNotes ? (
+                <div className="flex justify-center items-center h-40">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {notes.length === 0 ? (
+                    <p className="col-span-full text-center text-gray-400 py-10">No notes yet. Be the first!</p>
+                  ) : (
+                    notes.map((note) => {
+                      const rotation = (Math.random() * 6) - 3;
+                      return (
+                        <div 
+                          key={note.id}
+                          style={{ backgroundColor: note.color, transform: `rotate(${rotation}deg)` }}
+                          className="p-4 rounded shadow-md flex flex-col justify-between min-h-[120px] transition-transform duration-300 hover:scale-105 hover:rotate-0 hover:z-10 text-black"
+                        >
+                          <div className="text-sm font-medium text-gray-800 break-words">
+                            {note.text}
+                          </div>
+                          <div className="text-[0.65rem] text-right mt-2 text-black/50">
+                            {note.timestamp ? note.timestamp.toDate().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Just now'}
+                          </div>
                         </div>
-                        <div className="text-[0.65rem] text-right mt-2 text-black/50">
-                          {note.timestamp ? note.timestamp.toDate().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Just now'}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
     </>
   )
-}
+} 
