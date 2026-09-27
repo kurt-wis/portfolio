@@ -17,6 +17,7 @@ export interface ExperienceEntry {
   company: string
   description: string
   logo: string
+  certificateUrls?: string[]
 }
 
 export interface StackGroup {

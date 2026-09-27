@@ -62,8 +62,12 @@ export const experience: ExperienceEntry[] = [
     role: 'Competitive Programmer & Lead Developer',
     company: 'Tagisan ng Talino Codefest',
     description:
-      'Secured 2nd Runner-Up (2026) and 1st Runner-Up (2025). Engineered functional software solutions using Java and C# to solve complex algorithmic problem sets under strict time constraints.',
-    logo: '🏆',
+      'Secured 2nd Runner-Up (2026) and 1st Runner-Up (2025). Engineered functional software solutions using Java and Android Studio to solve complex algorithmic problem sets under strict time constraints.',
+    logo: '🏆', 
+    certificateUrls: [
+      '/cert-codefest-1st.png',
+      '/cert-codefest-2nd.png',
+    ],
   },
   {
     period: '2026',
@@ -71,7 +75,15 @@ export const experience: ExperienceEntry[] = [
     company: 'STI College Fairview Expo',
     description:
       'Awarded Best Programmer and 3rd Best Presenter. Managed project architecture, live code demonstrations, and booth coordination for panel evaluation.',
-    logo: '🎤',
+    logo: '🎤', 
+    certificateUrls: [
+      '/cert-programmer.png',
+      '/cert-app-1st.png',
+      '/cert-capstone-1st.png',
+      '/cert-tech-2nd.png',
+      '/cert-presenter-3rd.png',
+      '/cert-booth-1st.png',
+    ],
   },
   {
     period: '2026 — Present',
