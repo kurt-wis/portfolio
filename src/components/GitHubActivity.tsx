@@ -13,6 +13,40 @@ const THEME = {
 
 const WEEKS = 53
 const MIN_BLOCK = 10
+const GITHUB_USERNAME = 'kurt-wis'
+
+const QUERY = `
+  query($username: String!) {
+    user(login: $username) {
+      contributionsCollection {
+        contributionCalendar {
+          totalContributions
+          weeks {
+            contributionDays {
+              date
+              contributionCount
+              color
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
+const COLOR_TO_LEVEL: Record<string, number> = {
+  '#ebedf0': 0,
+  '#9be9a8': 1,
+  '#40c463': 2,
+  '#30a14e': 3,
+  '#216e39': 4,
+}
+
+interface DayRaw {
+  date: string
+  contributionCount: number
+  color: string
+}
 
 export default function GitHubActivity() {
   const { theme } = useTheme()
@@ -24,15 +58,48 @@ export default function GitHubActivity() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetch('https://github-contributions-api.jogruber.de/v4/kurt-wis?y=last')
+    const token = import.meta.env.VITE_GITHUB_TOKEN
+    if (!token) {
+      setError(true)
+      setLoading(false)
+      return
+    }
+
+    fetch('https://api.github.com/graphql', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: QUERY,
+        variables: { username: GITHUB_USERNAME },
+      }),
+    })
       .then((res) => res.json())
       .then((json) => {
-        const sorted = [...json.contributions].sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        if (json.errors || !json.data?.user) {
+          throw new Error('GraphQL error')
+        }
+
+        const weeks =
+          json.data.user.contributionsCollection.contributionCalendar.weeks
+        const flat: DayRaw[] = weeks.flatMap(
+          (w: { contributionDays: DayRaw[] }) => w.contributionDays
         )
+
+        const activities: Activity[] = flat.map((d) => ({
+          date: d.date,
+          count: d.contributionCount,
+          level: COLOR_TO_LEVEL[d.color.toLowerCase()] ?? 0,
+        }))
+
         const oneYearAgo = new Date()
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-        const filtered = sorted.filter((d) => new Date(d.date) >= oneYearAgo)
+        const filtered = activities.filter(
+          (d) => new Date(d.date) >= oneYearAgo
+        )
+
         setData(filtered)
         setLoading(false)
       })
