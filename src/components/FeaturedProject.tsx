@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { Project } from '@/types'
 import ProjectPlaceholder from './ProjectPlaceholder'
 import { ChevronLeftIcon, ChevronRightIcon } from './icons'
@@ -36,19 +37,17 @@ export default function FeaturedProject({ projects }: FeaturedProjectProps) {
         <div className="mb-4 flex items-start justify-between">
           <div>
             <div className="mb-1.5 text-xs uppercase tracking-widest text-ink-soft">Featured</div>
-            <a href={current.url ?? '#'} target="_blank" rel="noopener noreferrer">
+            <Link to={`/projects/${current.slug}`}>
               <h3 className="text-xl font-extrabold hover:underline">{current.title}</h3>
-            </a>
+            </Link>
           </div>
           <div className="text-sm tabular-nums text-ink-faint">
             {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
           </div>
         </div>
 
-        <a 
-          href={current.url ?? '#'} 
-          target="_blank" 
-          rel="noopener noreferrer" 
+        <Link
+          to={`/projects/${current.slug}`}
           className="relative mb-4 block aspect-[16/10.5] overflow-hidden rounded-xl border border-line bg-bg-soft"
         >
           {current.image ? (
@@ -56,7 +55,7 @@ export default function FeaturedProject({ projects }: FeaturedProjectProps) {
           ) : (
             <ProjectPlaceholder seed={index} />
           )}
-        </a>
+        </Link>
 
         <div className="flex items-center justify-between border-t border-line pt-4 text-sm text-ink-soft">
           <div className="flex items-center gap-2">
@@ -64,7 +63,7 @@ export default function FeaturedProject({ projects }: FeaturedProjectProps) {
             <span className="h-[3px] w-[3px] rounded-full bg-ink-faint" />
             <span>{current.tech}</span>
           </div>
-          <span>{current.year}</span>
+          <span>{current.status === 'In progress' ? 'In progress' : current.year}</span>
         </div>
 
         {total > 1 && <div className="mt-4 flex gap-2.5">

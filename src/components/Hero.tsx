@@ -78,19 +78,26 @@ export default function Hero() {
           <div className="mb-12 flex flex-wrap gap-3.5">
             <a
               href={profile.cvHref}
-              download
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-ink px-6 py-[15px] text-sm font-semibold text-bg transition-transform hover:-translate-y-0.5 hover:shadow-lg"
             >
+              View résumé
+              <span aria-hidden>↗</span>
+            </a>
+            <a
+              href={profile.cvHref}
+              download
+              className="inline-flex items-center gap-2 rounded-full border border-line-strong px-6 py-[15px] text-sm font-semibold transition-colors hover:border-ink hover:bg-bg-soft"
+            >
               <DownloadIcon className="h-[15px] w-[15px]" />
-              Download CV
+              Download PDF
             </a>
             <a
               href="#projects"
-              className="inline-flex items-center gap-2 rounded-full border border-line-strong px-6 py-[15px] text-sm font-semibold transition-colors hover:bg-bg-soft hover:border-ink"
+              className="inline-flex items-center gap-2 px-2 py-[15px] text-sm font-semibold text-ink-soft transition-colors hover:text-ink"
             >
-              View projects
+              View projects ↓
             </a>
           </div>
 

@@ -11,13 +11,24 @@ import Stack from './components/Stack'
 import Projects from './components/Projects'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
-import CommandTrigger from './components/CommandTrigger'
 import NotFound from './pages/NotFound'
 
 const AdminWall = lazy(() => import('./pages/AdminWall'))
-const CommandPalette = lazy(() => import('./components/CommandPalette'))
+const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
 const CursorBuddy = lazy(() => import('./components/CursorBuddy'))
 const GitHubActivity = lazy(() => import('./components/GitHubActivity'))
+const KONAMI_SEQUENCE = [
+  'arrowup',
+  'arrowup',
+  'arrowdown',
+  'arrowdown',
+  'arrowleft',
+  'arrowright',
+  'arrowleft',
+  'arrowright',
+  'b',
+  'a',
+]
 
 function GitHubActivityLoader() {
   const [visible, setVisible] = useState(false)
@@ -72,46 +83,75 @@ function HomePage() {
 }
 
 export default function App() {
-  const [commandOpen, setCommandOpen] = useState(false)
   const [showBuddy, setShowBuddy] = useState(false)
+  const [secretVisible, setSecretVisible] = useState(false)
+  const secretProgress = useRef(0)
+  const secretTimer = useRef<number | null>(null)
   const location = useLocation()
-  const isAdminPage = location.pathname === '/admin-wall'
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const isK = e.key.toLowerCase() === 'k'
-      const modifier = e.metaKey || e.ctrlKey
-      if (isK && modifier) {
-        e.preventDefault()
-        setCommandOpen((prev) => !prev)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  const isHomePage = location.pathname === '/'
 
   useEffect(() => {
     const timerId = setTimeout(() => setShowBuddy(true), 1200)
     return () => clearTimeout(timerId)
   }, [])
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey
+      ) {
+        secretProgress.current = 0
+        return
+      }
+
+      const key = event.key.toLowerCase()
+      const expected = KONAMI_SEQUENCE[secretProgress.current]
+      secretProgress.current = key === expected
+        ? secretProgress.current + 1
+        : key === KONAMI_SEQUENCE[0]
+          ? 1
+          : 0
+
+      if (secretProgress.current !== KONAMI_SEQUENCE.length) return
+
+      secretProgress.current = 0
+      setSecretVisible(false)
+      window.requestAnimationFrame(() => setSecretVisible(true))
+      if (secretTimer.current) window.clearTimeout(secretTimer.current)
+      secretTimer.current = window.setTimeout(
+        () => setSecretVisible(false),
+        3200,
+      )
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      if (secretTimer.current) window.clearTimeout(secretTimer.current)
+    }
+  }, [])
+
   return (
     <>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/projects/:slug" element={<Suspense fallback={<div className="min-h-screen bg-bg" />}><ProjectDetail /></Suspense>} />
         <Route path="/admin-wall" element={<Suspense fallback={<div className="min-h-screen bg-bg" />}><AdminWall /></Suspense>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {!isAdminPage && (
-        <>
-          {showBuddy && <Suspense><CursorBuddy /></Suspense>}
-          <CommandTrigger onOpen={() => setCommandOpen(true)} />
-          {commandOpen && (
-            <Suspense>
-              <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
-            </Suspense>
-          )}
-        </>
+      {isHomePage && showBuddy && <Suspense><CursorBuddy /></Suspense>}
+      {secretVisible && (
+        <div className="secret-reveal" role="status" aria-live="polite">
+          <div className="secret-reveal__mark" aria-hidden="true">WIS.</div>
+          <p className="secret-reveal__eyebrow">Hidden sequence found</p>
+          <p className="secret-reveal__message">Built with curiosity.</p>
+        </div>
       )}
     </>
   )

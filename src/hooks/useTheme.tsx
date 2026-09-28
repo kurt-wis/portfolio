@@ -14,7 +14,7 @@ const STORAGE_KEY = 'wis-theme'
 
 interface ThemeContextValue {
   theme: Theme
-  toggleTheme: () => void
+  toggleTheme: (origin?: { x: number; y: number }) => void
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
@@ -85,13 +85,24 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('storage', onStorage)
   }, [])
 
-  const toggleTheme = useCallback(() => {
+  const toggleTheme = useCallback((origin?: { x: number; y: number }) => {
     const next: Theme = theme === 'dark' ? 'light' : 'dark'
 
     if (!supportsViewTransition() || prefersReducedMotion()) {
       setTheme(next)
       return
     }
+
+    const x = origin?.x ?? window.innerWidth
+    const y = origin?.y ?? 0
+    const radius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y),
+    )
+    const root = document.documentElement
+    root.style.setProperty('--theme-x', `${x}px`)
+    root.style.setProperty('--theme-y', `${y}px`)
+    root.style.setProperty('--theme-radius', `${radius}px`)
 
     const doc = document as DocumentWithViewTransition
     doc.startViewTransition!(() => {

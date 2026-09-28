@@ -22,21 +22,72 @@ export const socials: SocialLink[] = [
 
 export const projects: Project[] = [
   {
+    slug: 'etickette-platform',
     title: 'eTickette Platform',
-    tagline: 'Event ticketing, built end to end.',
-    type: 'Web App',
+    tagline: 'Making campus queues easier to track and manage.',
+    status: 'Completed',
+    type: 'Hybrid Queue System',
     tech: 'HTML, CSS, JavaScript, Firebase',
     year: '2026',
-    desc: 'Full-stack ticketing platform that handles event listings, seat selection, and secure checkout. I led architecture and deployment across the entire stack.',
+
+    desc: 'A queue management system for the Registrar and Cashier departments of STI College Fairview. Students can check requirements before visiting, activate a ticket at the lobby kiosk, and follow the queue from their phone.',
+
+    role: 'Lead Full-Stack Developer',
+
+    challenge:
+      'During busy periods, students waited 20 to 30 minutes in crowded lobbies. Some reached the counter with incomplete requirements, while staff had no reliable way to show queue progress or control daily capacity.',
+
+    solution:
+      'I led the full-stack implementation. Students review their requirements online, but their ticket becomes active only when they arrive at the kiosk. Firebase handles live updates, while ticket limits and first-come-first-served ordering keep the queue fair.',
+
+    outcome:
+      'We evaluated the system with 197 senior high school students and selected staff. Its scores ranged from about 3.54 to 3.57 out of 4 across the areas we measured, consistently scoring higher than the manual process. It also received four awards at our school expo.',
+
+    highlights: [
+      'Real-time queue position and status monitoring',
+      'Online document-requirement pre-verification',
+      'Physical kiosk and QR-based ticket activation',
+      'Dynamic daily capacity and ticket limits',
+      'Fair first-come-first-served queue sequencing',
+      'Mobile-responsive student and staff interfaces',
+    ],
+
     awards: [
       'Best Application',
       'Best Capstone Project',
       '2nd Best Tech Innovation',
       "People's Choice Award",
     ],
+
     url: 'https://etickette.web.app/',
     repo: 'https://github.com/kurt-wis/etickette',
     image: '/etickette.png',
+  },
+  {
+    slug: 'tappi',
+    title: 'Tappi',
+    tagline: 'RFID attendance for student organizations.',
+    status: 'In progress',
+    type: 'Web App',
+    tech: 'Next.js, TypeScript, Supabase, Tailwind CSS',
+    year: '2026',
+    desc: 'An event attendance platform that lets student organizations register members, manage events, and record attendance by tapping an existing school ID on a USB RFID reader.',
+    role: 'Full-Stack Developer',
+    challenge:
+      'Paper sign-in sheets create long lines, make attendance easy to fake, and leave officers with hours of manual tallying. They also make it difficult to track late arrivals, walk-ins, absentees, and certificate eligibility.',
+    solution:
+      'Tappi links each school ID to a member once. At an event, the USB reader sends the card UID to the web app, which checks the event list and time, then records the student as present, late, or a walk-in. Duplicate scans are blocked, offline scans can sync later, and closing an event automatically marks absentees and awards attendance credit.',
+    outcome:
+      'The foundation, authentication, member and card management, event management, scanning workflow, offline batch handling, and event finalization are complete. Reporting and exports are the next milestone.',
+    highlights: [
+      'One-time school ID and RFID card linking',
+      'Present, late, walk-in, and absent attendance states',
+      'Duplicate-scan protection and offline batch syncing',
+      'Event master lists, capacity, and grace-period controls',
+      'Automatic event finalization, Credits, and Tappies',
+      'Multi-organization roles and audit logging',
+    ],
+    image: '/tappi-banner.png',
   },
 ]
 
@@ -45,13 +96,13 @@ export const profile = {
   initials: 'KG',
   role: ['Fullstack', 'Student'],
   avatarSrc: '/headshot.jpg',
-  bio: "I'm a full-stack student developer studying computer science. Most of what I know comes from building things — web apps, mobile apps, and whatever a hackathon weekend throws at me.\n\nRight now I'm exploring game dev and data analytics, mostly because I want to make something people lose track of time in — or find patterns in messy things. I don't have a clean one-line answer for what I am yet. I just like building.",
+  bio: "I'm a computer science student and full-stack developer who learns by building. I create practical web apps, experiment with new ideas, and enjoy turning messy problems into software people can actually use.",
   available: true,
   email: 'grape.kurtluis.pecson@gmail.com',
   cvHref: '/resume.pdf',
   stats: [
-    { value: '3+', label: 'Awards' },
-    { value: '01', label: 'Major Project' },
+    { value: '4', label: 'Project Awards' },
+    { value: '02', label: 'Projects' },
     { value: '15+', label: 'Technologies' },
   ],
 }

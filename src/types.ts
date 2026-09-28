@@ -1,14 +1,21 @@
 export interface Project {
+  slug: string
   title: string
   tagline?: string
+  status: 'Completed' | 'In progress'
   type: string
   tech: string
   year: string
   desc: string
+  role?: string
+  challenge?: string
+  solution?: string
+  outcome?: string
+  highlights?: string[]
   awards?: string[]
-  url: string
+  url?: string
   repo?: string
-  image: string
+  image?: string
 }
 
 export interface ExperienceEntry {

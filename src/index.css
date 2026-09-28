@@ -306,15 +306,15 @@ body {
 
 ::view-transition-new(root) {
   z-index: 2;
-  animation: theme-wipe 400ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation: theme-reveal 520ms cubic-bezier(0.76, 0, 0.24, 1) forwards;
 }
 
-@keyframes theme-wipe {
+@keyframes theme-reveal {
   from {
-    clip-path: polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%);
+    clip-path: circle(0 at var(--theme-x, 100%) var(--theme-y, 0));
   }
   to {
-    clip-path: polygon(100% 0%, 0% 0%, 0% 100%, 100% 100%);
+    clip-path: circle(var(--theme-radius, 150vmax) at var(--theme-x, 100%) var(--theme-y, 0));
   }
 }
 
@@ -324,55 +324,81 @@ body {
   }
 }
 
-.cursor-buddy-root {
+.secret-reveal {
   position: fixed;
-  bottom: 28px;
-  right: 28px;
-  z-index: 40;
-  pointer-events: none;
-}
-
-.cursor-buddy-bubble {
-  position: absolute;
-  bottom: 100%;
-  right: 0;
-  margin-bottom: 16px;
-  padding: 9px 15px;
+  left: 50%;
+  bottom: 32px;
+  z-index: 11000;
+  width: min(calc(100vw - 32px), 420px);
+  overflow: hidden;
+  border: 1px solid rgb(var(--line-strong));
+  border-radius: 18px;
+  padding: 22px 24px;
   background: rgb(var(--inverse-bg));
   color: rgb(var(--inverse-ink));
-  border-radius: 14px;
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  font-size: 12px;
-  white-space: nowrap;
+  box-shadow: 0 24px 70px -28px rgba(0, 0, 0, 0.55);
   pointer-events: none;
-  animation: bubble-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.45);
+  transform: translateX(-50%);
+  animation: secret-reveal 3.2s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.cursor-buddy-bubble-tail {
+.secret-reveal__mark {
   position: absolute;
-  bottom: -5px;
-  right: 24px;
-  width: 10px;
-  height: 10px;
-  background: rgb(var(--inverse-bg));
-  transform: rotate(45deg);
-  border-radius: 2px;
+  right: -8px;
+  bottom: -30px;
+  font-size: 88px;
+  font-weight: 800;
+  letter-spacing: -0.08em;
+  opacity: 0.08;
+  user-select: none;
 }
 
-@keyframes bubble-pop {
+.secret-reveal__eyebrow {
+  position: relative;
+  margin: 0 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.58;
+}
+
+.secret-reveal__message {
+  position: relative;
+  margin: 0;
+  font-family: Fraunces, serif;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+@keyframes secret-reveal {
   0% {
     opacity: 0;
-    transform: translateY(10px) scale(0.8);
+    transform: translate(-50%, 16px) scale(0.98);
   }
-  60% {
+  12%,
+  82% {
     opacity: 1;
-    transform: translateY(-2px) scale(1.02);
+    transform: translate(-50%, 0) scale(1);
   }
   100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.99);
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .secret-reveal {
+    animation: none;
+  }
+}
+
+.cursor-buddy-root {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 40;
+  pointer-events: none;
 }
 
 .cursor-buddy {
@@ -391,12 +417,35 @@ body {
 
 .cursor-buddy-inner {
   position: relative;
-  width: 84px;
-  height: 84px;
+  width: 100%;
+  height: 100%;
   filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.22));
   animation: buddy-float 4.5s ease-in-out infinite;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   transform-origin: center bottom;
+}
+
+@media (min-width: 640px) {
+  .cursor-buddy-root {
+    bottom: 24px;
+    right: 24px;
+  }
+}
+
+.cursor-buddy.is-sleeping .cursor-buddy-inner {
+  animation: buddy-sleep 5s ease-in-out infinite;
+}
+
+.mascot-sleep-mark {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  color: rgb(var(--ink-soft));
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  animation: sleep-mark 2.6s ease-in-out infinite;
 }
 
 .dark .cursor-buddy-inner {
@@ -411,18 +460,6 @@ body {
   transform: scale(0.92);
 }
 
-.mood-bounce .cursor-buddy-inner {
-  animation: buddy-bounce 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.mood-wiggle .cursor-buddy-inner {
-  animation: buddy-wiggle 0.9s ease-in-out;
-}
-
-.mood-pop .cursor-buddy-inner {
-  animation: buddy-pop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
 .cursor-buddy-base {
   position: absolute;
   inset: 0;
@@ -434,37 +471,6 @@ body {
   transition: opacity 0.6s ease;
 }
 
-.cursor-buddy-awake {
-  opacity: 1;
-  z-index: 2;
-}
-
-.cursor-buddy-awake.is-hidden {
-  opacity: 0;
-}
-
-.cursor-buddy-asleep {
-  opacity: 0;
-  z-index: 1;
-}
-
-.cursor-buddy-asleep.is-visible {
-  opacity: 1;
-}
-
-.cursor-buddy.is-sleeping .cursor-buddy-inner {
-  animation: buddy-sleep 6s ease-in-out infinite;
-}
-
-@keyframes buddy-sleep {
-  0%, 100% {
-    transform: translateY(0) rotate(-1deg);
-  }
-  50% {
-    transform: translateY(-5px) rotate(1deg);
-  }
-}
-
 @keyframes buddy-float {
   0%, 100% {
     transform: translateY(0) rotate(-1deg);
@@ -474,82 +480,29 @@ body {
   }
 }
 
-@keyframes buddy-bounce {
-  0%, 100% {
-    transform: translateY(0) scale(1);
-  }
-  30% {
-    transform: translateY(-14px) scale(1.06);
-  }
-  60% {
-    transform: translateY(-2px) scale(0.97);
-  }
-}
-
-@keyframes buddy-wiggle {
-  0%, 100% {
-    transform: rotate(0deg);
-  }
-  20% {
-    transform: rotate(-8deg);
-  }
-  40% {
-    transform: rotate(7deg);
-  }
-  60% {
-    transform: rotate(-5deg);
-  }
-  80% {
-    transform: rotate(3deg);
-  }
-}
-
-@keyframes buddy-pop {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.14);
-  }
-  70% {
-    transform: scale(0.96);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
 @keyframes buddy-sleep {
   0%, 100% {
-    transform: translateY(0) rotate(-2deg);
+    transform: translateY(0) rotate(-1deg);
   }
   50% {
-    transform: translateY(-4px) rotate(2deg);
+    transform: translateY(-4px) rotate(1deg);
   }
 }
 
-@media (max-width: 640px) {
-  .cursor-buddy-root {
-    bottom: 18px;
-    right: 18px;
+@keyframes sleep-mark {
+  0%, 100% {
+    opacity: 0.35;
+    transform: translateY(2px);
   }
-  .cursor-buddy-inner {
-    width: 64px;
-    height: 64px;
-  }
-  .cursor-buddy-bubble {
-    font-size: 11px;
-    padding: 7px 11px;
-    max-width: 200px;
-    white-space: normal;
-    text-align: right;
+  50% {
+    opacity: 0.9;
+    transform: translateY(-3px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cursor-buddy-inner,
-  .cursor-buddy-zzz span,
-  .cursor-buddy-bubble {
+  .mascot-sleep-mark {
     animation: none !important;
   }
 }

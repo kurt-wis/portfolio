@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { projects } from '@/data/portfolio'
 import ProjectPlaceholder from './ProjectPlaceholder'
 import SectionHead from './SectionHead'
@@ -11,39 +12,61 @@ export default function Projects() {
           <SectionHead
             eyebrow="Projects"
             title="Selected work"
-            description={`${projects.length} ${projects.length === 1 ? 'project' : 'projects'} across web apps, tools, and client sites.`}
+            description="A closer look at what I built, the decisions behind it, and what I learned."
           />
         </Reveal>
 
         <Reveal>
           <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project, i) => (
-              <a
-                key={project.title}
-                href={project.url ?? '#'}
-                target="_blank"
-                rel="noopener noreferrer"
+            {projects.map((project, index) => (
+              <article
+                key={project.slug}
                 className="group overflow-hidden rounded-[20px] border border-line bg-bg transition-all hover:-translate-y-1 hover:border-line-strong hover:shadow-xl"
               >
-                <div className="aspect-[4/3] border-b border-line bg-bg-soft">
-                  {project.image ? (
-                    <img src={project.image} alt={project.title} className="h-full w-full object-cover" />
-                  ) : (
-                    <ProjectPlaceholder seed={i} />
-                  )}
-                </div>
-                <div className="p-6">
-                  <span className="mb-2.5 block text-xs tabular-nums text-ink-faint">
-                    {String(i + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')}
-                  </span>
-                  <h4 className="mb-2 text-lg font-bold">{project.title}</h4>
-                  <p className="mb-4 text-[13.5px] leading-relaxed text-ink-soft">{project.desc}</p>
-                  <div className="flex flex-wrap gap-2 text-xs text-ink-soft">
-                    <span className="rounded-full border border-line px-2.5 py-1">{project.type}</span>
-                    <span className="rounded-full border border-line px-2.5 py-1">{project.tech}</span>
+                <Link to={`/projects/${project.slug}`} className="block">
+                  <div className="aspect-[4/3] overflow-hidden border-b border-line bg-bg-soft">
+                    {project.image ? (
+                      <img
+                        src={project.image}
+                        alt={`${project.title} preview`}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                      />
+                    ) : (
+                      <ProjectPlaceholder seed={index} />
+                    )}
                   </div>
-                </div>
-              </a>
+
+                  <div className="p-6">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <span className="text-xs tabular-nums text-ink-faint">
+                        {String(index + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')}
+                      </span>
+                      <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                        project.status === 'In progress'
+                          ? 'border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                          : 'border-line text-ink-soft'
+                      }`}>
+                        {project.status}
+                      </span>
+                    </div>
+
+                    <h3 className="mb-2 text-xl font-extrabold">{project.title}</h3>
+                    {project.tagline && (
+                      <p className="mb-3 text-sm font-medium text-ink">{project.tagline}</p>
+                    )}
+                    <p className="mb-5 text-sm leading-relaxed text-ink-soft">{project.desc}</p>
+
+                    <div className="mb-6 flex flex-wrap gap-2 text-xs text-ink-soft">
+                      <span className="rounded-full border border-line px-2.5 py-1">{project.type}</span>
+                      <span className="rounded-full border border-line px-2.5 py-1">{project.tech}</span>
+                    </div>
+
+                    <span className="text-sm font-semibold text-ink group-hover:underline">
+                      Read case study →
+                    </span>
+                  </div>
+                </Link>
+              </article>
             ))}
           </div>
         </Reveal>

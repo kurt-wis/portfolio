@@ -1,27 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Timestamp } from 'firebase/firestore'
 
-const PHRASES = [
-  'npm install hire-me',
-  'git commit -m "hire Kurt"',
-  'currently learning tRPC',
-  'go check my projects',
-  'press cmd k to explore',
-  'console.log("hire me")',
-  'sudo hire kurt',
-  'i like clean code',
-  'shipping > perfect',
-  'coffee.exe is running',
-  'reading docs rn',
-  'unit tests are friends',
-  'brb debugging',
-  'kurt writes good code',
-  'click me for fun',
-]
-
-const GREETING = 'oh you are back'
 const COOLDOWN_MS = 60000
 const COOLDOWN_STORAGE_KEY = 'lastPostAt'
+const INTRO_STORAGE_KEY = 'mascotGuestbookIntroSeen'
+const IDLE_DELAY_MS = 45000
+
+const AMBIENT_PHRASES = [
+  'The guestbook is open',
+  'Thanks for stopping by',
+  'Take your time',
+  'There is more below',
+]
 
 const THANK_YOU_PHRASES = [
   'thanks for the note!',
@@ -59,12 +49,14 @@ const getInitialCooldown = () => {
 export default function CursorBuddy() {
   const [phrase, setPhrase] = useState('')
   const [showBubble, setShowBubble] = useState(false)
-  const [isSleeping, setIsSleeping] = useState(false)
+  const [shouldIntroduce] = useState(
+    () => !sessionStorage.getItem(INTRO_STORAGE_KEY),
+  )
   const [userId, setUserId] = useState<string | null>(null)
-  const lastMove = useRef<number>(Date.now())
-  const wasSleeping = useRef(false)
-  const sleepAudioRef = useRef<HTMLAudioElement | null>(null)
-  const manualPhraseRef = useRef(false)
+  const [isSleeping, setIsSleeping] = useState(false)
+  const lastActivity = useRef(Date.now())
+  const mascotButtonRef = useRef<HTMLButtonElement>(null)
+  const noteInputRef = useRef<HTMLTextAreaElement>(null)
 
   const [isPromptOpen, setIsPromptOpen] = useState(false)
   const [isWallOpen, setIsWallOpen] = useState(false)
@@ -82,92 +74,85 @@ export default function CursorBuddy() {
     audio.play().catch(() => {});
   }
 
-  const startSleepSound = () => {
-    if (sleepAudioRef.current) return;
-    const audio = new Audio('/sounds/sleep.mp3');
-    audio.volume = 0.3;
-    audio.loop = true;
-    audio.play().catch(() => {});
-    sleepAudioRef.current = audio;
-  }
-
-  const stopSleepSound = () => {
-    if (sleepAudioRef.current) {
-      sleepAudioRef.current.pause();
-      sleepAudioRef.current.currentTime = 0;
-      sleepAudioRef.current = null;
-    }
-  }
-
-  const pickPhrase = () => PHRASES[Math.floor(Math.random() * PHRASES.length)]
-
   const sayPhrase = (message: string, duration = 3200) => {
-    manualPhraseRef.current = true
     setPhrase(message)
     setShowBubble(true)
-    window.setTimeout(() => {
-      setShowBubble(false)
-      manualPhraseRef.current = false
-    }, duration)
+    window.setTimeout(() => setShowBubble(false), duration)
   }
 
   useEffect(() => {
-    if (isSleeping || isWallOpen || isPromptOpen) {
-      setShowBubble(false)
-      return
-    }
-    let timeout: number
-    const loop = () => {
-      const delay = 4000 + Math.random() * 3500
-      timeout = window.setTimeout(() => {
-        if (!manualPhraseRef.current) {
-          setPhrase(pickPhrase())
-          setShowBubble(true)
-          window.setTimeout(() => setShowBubble(false), 3200)
-        }
-        loop()
+    if (!shouldIntroduce) return
+    sessionStorage.setItem(INTRO_STORAGE_KEY, 'true')
+    const introTimer = window.setTimeout(
+      () => sayPhrase('Leave a note in my guestbook', 4200),
+      700,
+    )
+    return () => window.clearTimeout(introTimer)
+  }, [shouldIntroduce])
+
+  useEffect(() => {
+    if (isPromptOpen || isWallOpen || isSleeping) return
+
+    let phraseTimer: number
+    const schedulePhrase = () => {
+      const delay = 25000 + Math.random() * 15000
+      phraseTimer = window.setTimeout(() => {
+        const next = AMBIENT_PHRASES[Math.floor(Math.random() * AMBIENT_PHRASES.length)]
+        sayPhrase(next, 3200)
+        schedulePhrase()
       }, delay)
     }
-    loop()
-    return () => clearTimeout(timeout)
-  }, [isSleeping, isWallOpen, isPromptOpen])
+
+    schedulePhrase()
+    return () => window.clearTimeout(phraseTimer)
+  }, [isPromptOpen, isSleeping, isWallOpen])
 
   useEffect(() => {
-    const onMove = () => {
-      lastMove.current = Date.now()
-      if (wasSleeping.current) {
-        wasSleeping.current = false
+    const markActive = () => {
+      lastActivity.current = Date.now()
+      if (isSleeping) {
         setIsSleeping(false)
-        stopSleepSound()
-        playSound('wake')
-        sayPhrase(GREETING, 2600)
+        sayPhrase('Welcome back', 2400)
       }
     }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('scroll', onMove, { passive: true })
-    window.addEventListener('keydown', onMove)
-    return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('scroll', onMove)
-      window.removeEventListener('keydown', onMove)
-    }
-  }, [])
 
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      if (wasSleeping.current) return
-      if (Date.now() - lastMove.current >= 15000) {
-        startSleepSound()
+    const idleTimer = window.setInterval(() => {
+      if (isPromptOpen || isWallOpen || isSleeping) return
+      if (Date.now() - lastActivity.current >= IDLE_DELAY_MS) {
+        setShowBubble(false)
         setIsSleeping(true)
-        wasSleeping.current = true
       }
     }, 1000)
-    return () => clearInterval(interval)
-  }, [])
+
+    window.addEventListener('mousemove', markActive)
+    window.addEventListener('scroll', markActive, { passive: true })
+    window.addEventListener('keydown', markActive)
+    window.addEventListener('touchstart', markActive, { passive: true })
+
+    return () => {
+      window.clearInterval(idleTimer)
+      window.removeEventListener('mousemove', markActive)
+      window.removeEventListener('scroll', markActive)
+      window.removeEventListener('keydown', markActive)
+      window.removeEventListener('touchstart', markActive)
+    }
+  }, [isPromptOpen, isSleeping, isWallOpen])
 
   useEffect(() => {
-    return () => stopSleepSound();
-  }, [])
+    if (!isPromptOpen) return
+    noteInputRef.current?.focus()
+  }, [isPromptOpen])
+
+  useEffect(() => {
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      if (isWallOpen) setIsWallOpen(false)
+      else if (isPromptOpen) setIsPromptOpen(false)
+      mascotButtonRef.current?.focus()
+    }
+    window.addEventListener('keydown', onEscape)
+    return () => window.removeEventListener('keydown', onEscape)
+  }, [isPromptOpen, isWallOpen])
 
   useEffect(() => {
     if (cooldownRemaining <= 0) return;
@@ -293,29 +278,22 @@ export default function CursorBuddy() {
 
   const handleMascotClick = () => {
     playSound('pop');
+    setIsSleeping(false)
+    lastActivity.current = Date.now()
     setIsPromptOpen(!isPromptOpen);
   };
 
   return (
     <>
-      <style>{`
-        @keyframes floatZzz {
-          0% { transform: translateY(0px) scale(1); opacity: 0; }
-          20% { opacity: 1; }
-          100% { transform: translateY(-15px) scale(1.1); opacity: 0; }
-        }
-        .animate-float-zzz {
-          animation: floatZzz 2.5s infinite ease-in-out;
-        }
-      `}</style>
-      
-      <div className="cursor-buddy-root fixed bottom-6 right-6 z-[9999] flex flex-col items-end pointer-events-none">
+      <div className="cursor-buddy-root fixed bottom-4 right-4 z-[9999] flex flex-col items-end pointer-events-none sm:bottom-6 sm:right-6">
         
-        <div className={`w-[calc(100vw-3rem)] max-w-[20rem] sm:w-72 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-gray-100 dark:border-zinc-800 p-4 mb-4 transition-all duration-300 ease-out origin-bottom-right pointer-events-auto ${
-          isPromptOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'
-        }`}>
+        {isPromptOpen && <div
+          className="w-[calc(100vw-3rem)] max-w-[20rem] sm:w-72 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-gray-100 dark:border-zinc-800 p-4 mb-4 origin-bottom-right pointer-events-auto"
+          role="dialog"
+          aria-labelledby="guestbook-prompt-title"
+        >
           <div className="flex justify-between items-center mb-3">
-            <h4 className="m-0 text-sm font-semibold text-gray-800 dark:text-gray-200">what do you want to say?</h4>
+            <h4 id="guestbook-prompt-title" className="m-0 text-sm font-semibold text-gray-800 dark:text-gray-200">what do you want to say?</h4>
             <button 
               onClick={() => setIsPromptOpen(false)} 
               aria-label="Close note prompt"
@@ -326,6 +304,7 @@ export default function CursorBuddy() {
           </div>
           
           <textarea
+            ref={noteInputRef}
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             maxLength={140}
@@ -358,12 +337,12 @@ export default function CursorBuddy() {
               </button>
             </div>
           </div>
-        </div>
+        </div>}
 
         <div className="relative pointer-events-auto">
           
-          <div className={`absolute bottom-full right-0 mb-3 bg-black dark:bg-white text-white dark:text-black text-xs px-3 py-2 rounded-lg whitespace-nowrap pointer-events-none shadow-md z-50 transition-all duration-300 ease-out ${
-            showBubble && phrase && !isWallOpen 
+          <div className={`absolute bottom-full right-0 mb-3 max-w-[calc(100vw-2rem)] rounded-lg bg-black px-3 py-2 text-right text-xs text-white shadow-md transition-all duration-300 ease-out pointer-events-none z-50 dark:bg-white dark:text-black sm:max-w-none sm:whitespace-nowrap ${
+            showBubble && phrase && !isWallOpen && !isSleeping
               ? 'opacity-100 translate-y-0 scale-100' 
               : 'opacity-0 translate-y-2 scale-95'
           }`}>
@@ -372,23 +351,20 @@ export default function CursorBuddy() {
           </div>
 
           <button
+            ref={mascotButtonRef}
             onClick={handleMascotClick}
-            className="cursor-buddy relative w-24 h-24 flex items-center justify-center pointer-events-auto transition-transform duration-200 hover:scale-105"
-            aria-label="Open note prompt"
+            className={`cursor-buddy relative flex h-16 w-16 items-center justify-center pointer-events-auto transition-transform duration-200 hover:scale-105 sm:h-24 sm:w-24 ${isSleeping ? 'is-sleeping' : ''}`}
+            aria-label={isSleeping ? 'Wake mascot and open visitor guestbook' : 'Open visitor guestbook'}
           >
             <div className="cursor-buddy-inner relative w-full h-full">
-              {isSleeping ? (
-                <div className="relative w-full h-full">
-                  <img src="/mascot-sleeping.svg" alt="" className="cursor-buddy-base w-full h-full object-contain" draggable={false} />
-                  
-                  <div className="absolute -top-4 -right-6 flex flex-row items-end gap-1">
-                    <span className="text-xl font-bold text-gray-400 dark:text-gray-500 animate-float-zzz" style={{ animationDelay: '0s' }}>Z</span>
-                    <span className="text-lg font-bold text-gray-400 dark:text-gray-500 animate-float-zzz" style={{ animationDelay: '0.3s' }}>z</span>
-                    <span className="text-base font-bold text-gray-400 dark:text-gray-500 animate-float-zzz" style={{ animationDelay: '0.6s' }}>z</span>
-                  </div>
-                </div>
-              ) : (
-                <img src="/mascot.svg" alt="" className="cursor-buddy-base w-full h-full object-contain" draggable={false} />
+              <img
+                src={isSleeping ? '/mascot-sleeping.svg' : '/mascot.svg'}
+                alt=""
+                className="cursor-buddy-base w-full h-full object-contain"
+                draggable={false}
+              />
+              {isSleeping && (
+                <span className="mascot-sleep-mark" aria-hidden="true">z z z</span>
               )}
             </div>
           </button>

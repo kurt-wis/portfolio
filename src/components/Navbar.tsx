@@ -115,7 +115,9 @@ export default function Navbar() {
 
         <div className="flex items-center gap-4">
           <button
-            onClick={toggleTheme}
+            onClick={(event) =>
+              toggleTheme({ x: event.clientX, y: event.clientY })
+            }
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-soft transition-transform hover:rotate-[20deg] hover:bg-bg-soft-2"
           >
