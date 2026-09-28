@@ -59,7 +59,7 @@ function CertificateStack({ urls, onExpand }: { urls: string[], onExpand: (urls:
                     e.stopPropagation()
                     onExpand(urls, activeIndex)
                   }}
-                  className="absolute right-3 top-3 rounded-full bg-black/60 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-white sm:right-4 sm:top-4"
+                  className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-colors hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-white sm:right-4 sm:top-4"
                   aria-label="Expand certificate"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -202,6 +202,9 @@ export default function Experience() {
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 backdrop-blur-md sm:p-8"
           onClick={() => setSelectedCert(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Certificate viewer"
         >
           <button
             onClick={() => setSelectedCert(null)}

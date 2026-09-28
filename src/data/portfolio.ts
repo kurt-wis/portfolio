@@ -110,7 +110,7 @@ export const stack: StackGroup[] = [
   },
   {
     label: 'Frontend',
-    items: ['React', 'Tailwind CSS', 'HTML5', 'CSS3', 'Vite', 'Framer Motion'],
+    items: ['React', 'Tailwind CSS', 'HTML5', 'CSS3', 'Vite'],
   },
   {
     label: 'Backend',

@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { 
-  collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, limit, Timestamp 
-} from 'firebase/firestore'
-import { signInAnonymously, onAuthStateChanged } from 'firebase/auth'
-import { db, auth } from '../firebase'
+import type { Timestamp } from 'firebase/firestore'
 
 const PHRASES = [
   'npm install hire-me',
@@ -76,6 +72,8 @@ export default function CursorBuddy() {
   const [notes, setNotes] = useState<Note[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingNotes, setIsLoadingNotes] = useState(false)
+  const [notesError, setNotesError] = useState('')
+  const [wallRetryKey, setWallRetryKey] = useState(0)
   const [cooldownRemaining, setCooldownRemaining] = useState(getInitialCooldown)
 
   const playSound = (soundName: string) => {
@@ -187,30 +185,65 @@ export default function CursorBuddy() {
   useEffect(() => {
     if (!isWallOpen) return;
     setIsLoadingNotes(true);
+    setNotesError('');
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
 
-    const q = query(collection(db, 'notes'), orderBy('timestamp', 'desc'), limit(100));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedNotes: Note[] = [];
-      snapshot.forEach((doc) => {
-        fetchedNotes.push({ id: doc.id, ...doc.data() } as Note);
+    void Promise.all([import('../firebase'), import('firebase/firestore')])
+      .then(([{ db }, firestore]) => {
+        if (cancelled) return;
+        const q = firestore.query(
+          firestore.collection(db, 'notes'),
+          firestore.orderBy('timestamp', 'desc'),
+          firestore.limit(100),
+        );
+        unsubscribe = firestore.onSnapshot(
+          q,
+          (snapshot) => {
+            const fetchedNotes: Note[] = [];
+            snapshot.forEach((noteDocument) => {
+              fetchedNotes.push({ id: noteDocument.id, ...noteDocument.data() } as Note);
+            });
+            setNotes(fetchedNotes);
+            setIsLoadingNotes(false);
+          },
+          () => {
+            setNotesError('Could not load notes right now.');
+            setIsLoadingNotes(false);
+          },
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setNotesError('Could not load notes right now.');
+          setIsLoadingNotes(false);
+        }
       });
-      setNotes(fetchedNotes);
-      setIsLoadingNotes(false);
-    });
 
-    return () => unsubscribe();
-  }, [isWallOpen]);
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [isWallOpen, wallRetryKey]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserId(user.uid);
-      } else {
-        signInAnonymously(auth).catch((error) => console.error("Auth error:", error));
-      }
+    if (!isPromptOpen) return;
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+
+    void Promise.all([import('../firebase'), import('firebase/auth')]).then(([{ auth }, authApi]) => {
+      if (cancelled) return;
+      unsubscribe = authApi.onAuthStateChanged(auth, (user) => {
+        if (user) setUserId(user.uid);
+        else void authApi.signInAnonymously(auth);
+      });
     });
-    return () => unsubscribe();
-  }, []);
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [isPromptOpen]);
 
   const handleSubmitNote = async () => {
     const text = noteText.trim();
@@ -234,11 +267,15 @@ export default function CursorBuddy() {
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
     try {
-      await addDoc(collection(db, 'notes'), {
+      const [{ db }, firestore] = await Promise.all([
+        import('../firebase'),
+        import('firebase/firestore'),
+      ]);
+      await firestore.addDoc(firestore.collection(db, 'notes'), {
         text: text,
         color: randomColor,
         userId: userId,
-        timestamp: serverTimestamp(),
+        timestamp: firestore.serverTimestamp(),
       });
       localStorage.setItem(COOLDOWN_STORAGE_KEY, Date.now().toString());
       setCooldownRemaining(60);
@@ -281,6 +318,7 @@ export default function CursorBuddy() {
             <h4 className="m-0 text-sm font-semibold text-gray-800 dark:text-gray-200">what do you want to say?</h4>
             <button 
               onClick={() => setIsPromptOpen(false)} 
+              aria-label="Close note prompt"
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none transition-colors"
             >
               &times;
@@ -309,14 +347,14 @@ export default function CursorBuddy() {
               </button>
               <button 
                 onClick={handleSubmitNote}
-                disabled={isSubmitting || noteText.trim().length === 0}
+                disabled={isSubmitting || !userId || noteText.trim().length === 0}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors min-w-[52px] border ${
                   cooldownRemaining > 0
                     ? 'bg-transparent border-dashed border-gray-400 dark:border-zinc-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
                     : 'bg-black dark:bg-white border-transparent text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50'
                 }`}
               >
-                {isSubmitting ? '...' : cooldownRemaining > 0 ? `${cooldownRemaining}s` : 'Post'}
+                {isSubmitting ? '...' : !userId ? 'Connecting…' : cooldownRemaining > 0 ? `${cooldownRemaining}s` : 'Post'}
               </button>
             </div>
           </div>
@@ -361,6 +399,9 @@ export default function CursorBuddy() {
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] flex justify-center items-center p-4 transition-opacity duration-300"
           onClick={() => setIsWallOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="visitor-wall-title"
         >
           <div 
             className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col relative transition-transform duration-300 scale-100"
@@ -368,11 +409,12 @@ export default function CursorBuddy() {
           >
             <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-zinc-800">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white m-0">The Wall</h2>
+                <h2 id="visitor-wall-title" className="text-2xl font-bold text-gray-900 dark:text-white m-0">The Wall</h2>
                 <p className="text-gray-500 dark:text-gray-400 text-sm m-0">Notes from amazing visitors</p>
               </div>
               <button 
                 onClick={() => setIsWallOpen(false)}
+                aria-label="Close visitor wall"
                 className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-3xl leading-none transition-colors"
               >
                 &times;
@@ -383,6 +425,16 @@ export default function CursorBuddy() {
               {isLoadingNotes ? (
                 <div className="flex justify-center items-center h-40">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+                </div>
+              ) : notesError ? (
+                <div className="flex min-h-40 flex-col items-center justify-center gap-3 text-center">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{notesError}</p>
+                  <button
+                    onClick={() => setWallRetryKey((key) => key + 1)}
+                    className="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 dark:border-zinc-700 dark:text-gray-200 dark:hover:bg-zinc-800"
+                  >
+                    Try again
+                  </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">

@@ -95,6 +95,9 @@ export default function CommandPalette({
       <div
         className="w-full max-w-xl overflow-hidden rounded-2xl border border-line bg-bg shadow-2xl"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
       >
         <Command label="Command Menu" loop>
           <div className="flex items-center gap-3 border-b border-line px-4">

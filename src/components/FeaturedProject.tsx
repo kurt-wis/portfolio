@@ -19,7 +19,7 @@ export default function FeaturedProject({ projects }: FeaturedProjectProps) {
   const go = (next: number) => setIndex(((next % total) + total) % total)
 
   useEffect(() => {
-    if (paused) return
+    if (paused || total < 2) return
     timerRef.current = setInterval(() => go((index + 1) % total), AUTOPLAY_MS)
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
@@ -67,7 +67,7 @@ export default function FeaturedProject({ projects }: FeaturedProjectProps) {
           <span>{current.year}</span>
         </div>
 
-        <div className="mt-4 flex gap-2.5">
+        {total > 1 && <div className="mt-4 flex gap-2.5">
           <button
             onClick={() => go(index - 1)}
             aria-label="Previous project"
@@ -82,10 +82,10 @@ export default function FeaturedProject({ projects }: FeaturedProjectProps) {
           >
             <ChevronRightIcon className="h-4 w-4" />
           </button>
-        </div>
+        </div>}
       </div>
 
-      <div className="hidden w-6 flex-shrink-0 flex-col items-center pt-1.5 sm:flex">
+      {total > 1 && <div className="hidden w-6 flex-shrink-0 flex-col items-center pt-1.5 sm:flex">
         <div className="my-1.5 w-px flex-1 bg-line-strong" />
         {projects.map((p, i) => (
           <button
@@ -100,7 +100,7 @@ export default function FeaturedProject({ projects }: FeaturedProjectProps) {
           </button>
         ))}
         <div className="my-1.5 w-px flex-1 bg-line-strong" />
-      </div>
+      </div>}
     </div>
   )
 }

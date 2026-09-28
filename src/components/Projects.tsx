@@ -11,7 +11,7 @@ export default function Projects() {
           <SectionHead
             eyebrow="Projects"
             title="Selected work"
-            description={`${projects.length} projects across web apps, tools, and client sites.`}
+            description={`${projects.length} ${projects.length === 1 ? 'project' : 'projects'} across web apps, tools, and client sites.`}
           />
         </Reveal>
 
@@ -22,6 +22,7 @@ export default function Projects() {
                 key={project.title}
                 href={project.url ?? '#'}
                 target="_blank"
+                rel="noopener noreferrer"
                 className="group overflow-hidden rounded-[20px] border border-line bg-bg transition-all hover:-translate-y-1 hover:border-line-strong hover:shadow-xl"
               >
                 <div className="aspect-[4/3] border-b border-line bg-bg-soft">

@@ -7,6 +7,7 @@ import {
 } from 'firebase/auth'
 import { Link } from 'react-router-dom'
 import { db, auth } from '../firebase'
+import { profile } from '@/data/portfolio'
 
 interface Note {
   id: string;
@@ -27,7 +28,13 @@ export default function AdminWall() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser)
+      const isAdmin = Boolean(
+        currentUser &&
+        !currentUser.isAnonymous &&
+        currentUser.email?.toLowerCase() === profile.email.toLowerCase(),
+      )
+      setUser(isAdmin ? currentUser : null)
+      if (currentUser && !isAdmin) void signOut(auth)
     })
     return () => unsubscribe()
   }, [])
@@ -39,14 +46,21 @@ export default function AdminWall() {
     }
     setIsLoading(true)
     const q = query(collection(db, 'notes'), orderBy('timestamp', 'desc'))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetched: Note[] = []
-      snapshot.forEach((d) => {
-        fetched.push({ id: d.id, ...d.data() } as Note)
-      })
-      setNotes(fetched)
-      setIsLoading(false)
-    })
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetched: Note[] = []
+        snapshot.forEach((d) => {
+          fetched.push({ id: d.id, ...d.data() } as Note)
+        })
+        setNotes(fetched)
+        setIsLoading(false)
+      },
+      () => {
+        setError('Could not load notes. Check the Firebase security rules.')
+        setIsLoading(false)
+      },
+    )
     return () => unsubscribe()
   }, [user])
 
@@ -56,6 +70,11 @@ export default function AdminWall() {
     setIsLoggingIn(true)
     try {
       await signInWithEmailAndPassword(auth, email, password)
+      const signedInUser = auth.currentUser
+      if (!signedInUser || signedInUser.email?.toLowerCase() !== profile.email.toLowerCase()) {
+        await signOut(auth)
+        throw new Error('Not an authorized administrator')
+      }
       setEmail('')
       setPassword('')
     } catch (err) {

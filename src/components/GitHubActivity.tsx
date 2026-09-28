@@ -128,7 +128,7 @@ export default function GitHubActivity() {
   }, [loading])
 
   return (
-    <section id="github" className="px-6 py-20 sm:px-12 sm:py-28">
+    <section className="px-6 py-20 sm:px-12 sm:py-28">
       <div className="mx-auto max-w-wrap">
         <Reveal>
           <SectionHead
