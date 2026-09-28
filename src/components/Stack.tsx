@@ -4,16 +4,32 @@ import Reveal from './Reveal'
 
 const ICONS: Record<string, string> = {
   // Languages
-  'JavaScript': 'JS', 'TypeScript': 'TS', 'Python': 'Py', 'Java': 'Jv', 'C#': 'C#', 'Lua': 'Lu',
+  'JavaScript': '/icons/javascript.svg',
+  'TypeScript': '/icons/typescript.svg',
+  'Python': '/icons/python.svg',
+  'Java': '/icons/openjdk.svg',
+  'C#': '/icons/sharp.svg',
+  'Lua': '/icons/lua.svg',
 
   // Frontend
-  'React': 'Rx', 'Tailwind CSS': 'Tw', 'HTML5': 'H5', 'CSS3': 'C3', 'Vite': 'Vi',
+  'React': '/icons/react.svg',
+  'Tailwind CSS': '/icons/tailwindcss.svg',
+  'HTML5': '/icons/html5.svg',
+  'CSS3': '/icons/css.svg',
+  'Vite': '/icons/vite.svg',
 
   // Backend
-  'Node.js': 'Nd', 'Express': 'Ex', 'MongoDB': 'Mo', 'Firebase': 'Fb', 'Supabase': 'Sb',
+  'Node.js': '/icons/nodedotjs.svg',
+  'Express': '/icons/express.svg',
+  'MongoDB': '/icons/mongodb.svg',
+  'Firebase': '/icons/firebase.svg',
+  'Supabase': '/icons/supabase.svg',
 
   // Deployment & Tools
-  'Vercel': 'Ve', 'Docker': 'Do', 'AWS': 'AWS', 'Git': 'Gt', 'GitHub': 'GH',
+  'Vercel': '/icons/vercel.svg',
+  'Docker': '/icons/docker.svg',
+  'Git': '/icons/git.svg',
+  'GitHub': '/icons/github.svg',
 }
 
 export default function Stack() {
@@ -42,14 +58,21 @@ export default function Stack() {
                       className="group flex items-center gap-2.5 rounded-full border border-line bg-bg px-3.5 py-2 text-[13.5px] transition-all hover:-translate-y-0.5 hover:border-ink hover:bg-bg-soft hover:shadow-md"
                     >
                      {ICONS[item] ? (
+                        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white p-1 dark:bg-white">
+                          <img
+                            src={ICONS[item]}
+                            alt=""
+                            loading="lazy"
+                            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-125"
+                          />
+                        </div>
+                      ) : (
                         <span
                           aria-hidden="true"
-                          className="flex h-6 min-w-6 flex-shrink-0 items-center justify-center rounded-full bg-ink px-1 text-[9px] font-extrabold tracking-tight text-bg transition-transform duration-300 group-hover:scale-110"
+                          className="flex h-6 min-w-6 flex-shrink-0 items-center justify-center rounded-full bg-ink px-1 text-[8px] font-extrabold text-bg"
                         >
-                          {ICONS[item]}
+                          {item === 'AWS' ? 'AWS' : item.slice(0, 2)}
                         </span>
-                      ) : (
-                        <span className="h-4 w-4 flex-shrink-0 rounded border border-line-strong bg-bg-soft-2" />
                       )}
                       {item}
                     </span>
