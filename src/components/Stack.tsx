@@ -30,6 +30,7 @@ const ICONS: Record<string, string> = {
   'Docker': '/icons/docker.svg',
   'Git': '/icons/git.svg',
   'GitHub': '/icons/github.svg',
+  'AWS': '/icons/aws.svg',
 }
 
 export default function Stack() {
