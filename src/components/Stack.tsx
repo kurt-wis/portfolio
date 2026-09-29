@@ -7,7 +7,7 @@ const ICONS: Record<string, string> = {
   'JavaScript': '/icons/javascript.svg',
   'TypeScript': '/icons/typescript.svg',
   'Python': '/icons/python.svg',
-  'Java': '/icons/openjdk.svg',
+  'Java': '/icons/java.svg',
   'C#': '/icons/sharp.svg',
   'Lua': '/icons/lua.svg',
 
