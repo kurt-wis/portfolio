@@ -25,6 +25,7 @@ export interface ExperienceEntry {
   description: string
   logo: string
   certificateUrls?: string[]
+  link?: { label: string; href: string }
 }
 
 export interface StackGroup {

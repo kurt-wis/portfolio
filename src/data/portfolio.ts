@@ -101,13 +101,26 @@ export const profile = {
   email: 'grape.kurtluis.pecson@gmail.com',
   cvHref: '/resume.pdf',
   stats: [
-    { value: '4', label: 'Project Awards' },
+    { value: '5', label: 'Project Awards' },
     { value: '02', label: 'Projects' },
     { value: '15+', label: 'Technologies' },
   ],
 }
 
 export const experience: ExperienceEntry[] = [
+  {
+    period: 'October 3–4, 2026',
+    role: '1st Runner-Up — Educational Crisis Track',
+    company: 'Build Over Nights: Kiro x Quick Hackathon',
+    description:
+      'Our team built Study Bunny, a web app, during an overnight hackathon at the AWS Office in Bonifacio Global City. We used Quick for ideation and Kiro for development, earning 1st Runner-Up in the Educational Crisis Track.',
+    logo: '',
+    certificateUrls: ['/cert-build-over-nights.png'],
+    link: {
+      label: 'Explore Study Bunny',
+      href: 'https://study-bunny-iota.vercel.app/student',
+    },
+  },
   {
     period: '2025 — 2026',
     role: 'Competitive Programmer & Lead Developer',

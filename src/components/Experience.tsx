@@ -181,6 +181,16 @@ export default function Experience() {
                         <p className="text-[14.5px] leading-relaxed text-ink-soft">
                           {entry.description}
                         </p>
+                      {entry.link && (
+                        <a
+                          href={entry.link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold underline decoration-line-strong underline-offset-4 transition-colors hover:text-ink-soft"
+                        >
+                          {entry.link.label} <span aria-hidden="true">↗</span>
+                        </a>
+                      )}
                       </div>
 
                       <div className="flex w-full flex-shrink-0 justify-center sm:w-[400px]">
