@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Timestamp } from 'firebase/firestore'
 
 const COOLDOWN_MS = 60000
 const COOLDOWN_STORAGE_KEY = 'lastPostAt'
 const INTRO_STORAGE_KEY = 'mascotGuestbookIntroSeen'
 const IDLE_DELAY_MS = 45000
+const SECRET_TAP_TIMEOUT_MS = 3000
+const SECRET_HINTS = ['Hey.', "Don't touch me.", 'One more time.']
 
 const AMBIENT_PHRASES = [
   'The guestbook is open',
@@ -46,7 +48,7 @@ const getInitialCooldown = () => {
   return Math.max(0, Math.ceil((COOLDOWN_MS - elapsed) / 1000));
 }
 
-export default function CursorBuddy({ onStartMining }: { onStartMining: () => void }) {
+export default function CursorBuddy({ onStartMining, secretSignal = 0 }: { onStartMining: () => void; secretSignal?: number }) {
   const [phrase, setPhrase] = useState('')
   const [showBubble, setShowBubble] = useState(false)
   const [shouldIntroduce] = useState(
@@ -57,6 +59,11 @@ export default function CursorBuddy({ onStartMining }: { onStartMining: () => vo
   const lastActivity = useRef(Date.now())
   const mascotButtonRef = useRef<HTMLButtonElement>(null)
   const noteInputRef = useRef<HTMLTextAreaElement>(null)
+  const tapCount = useRef(0)
+  const tapResetTimer = useRef<number | null>(null)
+  const bubbleTimer = useRef<number | null>(null)
+  const lastSecretSignal = useRef(secretSignal)
+  const [pokeCount, setPokeCount] = useState(0)
 
   const [isPromptOpen, setIsPromptOpen] = useState(false)
   const [isWallOpen, setIsWallOpen] = useState(false)
@@ -74,24 +81,42 @@ export default function CursorBuddy({ onStartMining }: { onStartMining: () => vo
     audio.play().catch(() => {});
   }
 
-  const sayPhrase = (message: string, duration = 3200) => {
+  const sayPhrase = useCallback((message: string, duration = 3200) => {
+    if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current)
     setPhrase(message)
     setShowBubble(true)
-    window.setTimeout(() => setShowBubble(false), duration)
-  }
+    bubbleTimer.current = window.setTimeout(() => setShowBubble(false), duration)
+  }, [])
+
+  const startMining = useCallback(() => {
+    if (tapResetTimer.current !== null) window.clearTimeout(tapResetTimer.current)
+    tapCount.current = 0
+    onStartMining()
+  }, [onStartMining])
+
+  useEffect(() => () => {
+    if (tapResetTimer.current !== null) window.clearTimeout(tapResetTimer.current)
+    if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current)
+  }, [])
+
+  useEffect(() => {
+    if (secretSignal === lastSecretSignal.current) return
+    lastSecretSignal.current = secretSignal
+    startMining()
+  }, [secretSignal, startMining])
 
   useEffect(() => {
     if (!shouldIntroduce) return
     sessionStorage.setItem(INTRO_STORAGE_KEY, 'true')
     const introTimer = window.setTimeout(
-      () => sayPhrase('Leave a note in my guestbook', 4200),
+      () => { if (tapCount.current === 0) sayPhrase('Leave a note in my guestbook', 4200) },
       700,
     )
     return () => window.clearTimeout(introTimer)
-  }, [shouldIntroduce])
+  }, [shouldIntroduce, sayPhrase])
 
   useEffect(() => {
-    if (isPromptOpen || isWallOpen || isSleeping) return
+    if (isPromptOpen || isWallOpen || isSleeping || pokeCount > 0) return
 
     let phraseTimer: number
     const schedulePhrase = () => {
@@ -105,7 +130,7 @@ export default function CursorBuddy({ onStartMining }: { onStartMining: () => vo
 
     schedulePhrase()
     return () => window.clearTimeout(phraseTimer)
-  }, [isPromptOpen, isSleeping, isWallOpen])
+  }, [isPromptOpen, isSleeping, isWallOpen, pokeCount, sayPhrase])
 
   useEffect(() => {
     const markActive = () => {
@@ -117,7 +142,7 @@ export default function CursorBuddy({ onStartMining }: { onStartMining: () => vo
     }
 
     const idleTimer = window.setInterval(() => {
-      if (isPromptOpen || isWallOpen || isSleeping) return
+      if (isPromptOpen || isWallOpen || isSleeping || tapCount.current > 0) return
       if (Date.now() - lastActivity.current >= IDLE_DELAY_MS) {
         setShowBubble(false)
         setIsSleeping(true)
@@ -136,7 +161,7 @@ export default function CursorBuddy({ onStartMining }: { onStartMining: () => vo
       window.removeEventListener('keydown', markActive)
       window.removeEventListener('touchstart', markActive)
     }
-  }, [isPromptOpen, isSleeping, isWallOpen])
+  }, [isPromptOpen, isSleeping, isWallOpen, sayPhrase])
 
   useEffect(() => {
     if (!isPromptOpen) return
@@ -146,6 +171,11 @@ export default function CursorBuddy({ onStartMining }: { onStartMining: () => vo
   useEffect(() => {
     const onEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
+      if (!isWallOpen && !isPromptOpen && tapCount.current === 0) return
+      if (tapResetTimer.current !== null) window.clearTimeout(tapResetTimer.current)
+      tapCount.current = 0
+      setPokeCount(0)
+      setShowBubble(false)
       if (isWallOpen) setIsWallOpen(false)
       else if (isPromptOpen) setIsPromptOpen(false)
       mascotButtonRef.current?.focus()
@@ -280,7 +310,23 @@ export default function CursorBuddy({ onStartMining }: { onStartMining: () => vo
     playSound('pop');
     setIsSleeping(false)
     lastActivity.current = Date.now()
-    setIsPromptOpen(!isPromptOpen);
+    if (tapResetTimer.current !== null) window.clearTimeout(tapResetTimer.current)
+    const count = ++tapCount.current
+    setPokeCount(count)
+    if (count === 5) { startMining(); return }
+    if (count === 1) {
+      setShowBubble(false)
+      setIsPromptOpen((open) => !open)
+    } else {
+      setIsPromptOpen(false)
+      noteInputRef.current?.blur()
+      sayPhrase(SECRET_HINTS[count - 2], SECRET_TAP_TIMEOUT_MS)
+    }
+    tapResetTimer.current = window.setTimeout(() => {
+      tapCount.current = 0
+      setPokeCount(0)
+      setShowBubble(false)
+    }, SECRET_TAP_TIMEOUT_MS)
   };
 
   return (
@@ -337,12 +383,6 @@ export default function CursorBuddy({ onStartMining }: { onStartMining: () => vo
               </button>
             </div>
           </div>
-          <div className="mt-4 border-t border-gray-100 pt-3 dark:border-zinc-800">
-            <button type="button" onClick={onStartMining} className="min-h-11 w-full rounded-md border border-gray-200 px-3 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-100 dark:border-zinc-700 dark:text-gray-200 dark:hover:bg-zinc-800">
-              Mine this page
-            </button>
-            <p className="mt-2 text-xs text-gray-500">A little demolition. Everything restores when you exit.</p>
-          </div>
         </div>}
 
         <div className="relative pointer-events-auto">
@@ -351,7 +391,7 @@ export default function CursorBuddy({ onStartMining }: { onStartMining: () => vo
             showBubble && phrase && !isWallOpen && !isSleeping
               ? 'opacity-100 translate-y-0 scale-100' 
               : 'opacity-0 translate-y-2 scale-95'
-          }`}>
+          }`} role="status" aria-live="polite" aria-hidden={!showBubble || isSleeping || isWallOpen}>
             {phrase}
             <div className="absolute -bottom-1 right-4 w-2 h-2 bg-black dark:bg-white rotate-45"></div>
           </div>
@@ -361,8 +401,10 @@ export default function CursorBuddy({ onStartMining }: { onStartMining: () => vo
             onClick={handleMascotClick}
             className={`cursor-buddy relative flex h-16 w-16 items-center justify-center pointer-events-auto transition-transform duration-200 hover:scale-105 sm:h-24 sm:w-24 ${isSleeping ? 'is-sleeping' : ''}`}
             aria-label={isSleeping ? 'Wake mascot and open visitor guestbook' : 'Open visitor guestbook'}
+            aria-expanded={isPromptOpen}
+            style={{ touchAction: 'manipulation' }}
           >
-            <div className="cursor-buddy-inner relative w-full h-full">
+            <div key={pokeCount} className={`cursor-buddy-inner relative w-full h-full ${pokeCount >= 2 ? 'is-poked' : ''}`}>
               <img
                 src={isSleeping ? '/mascot-sleeping.svg' : '/mascot.svg'}
                 alt=""

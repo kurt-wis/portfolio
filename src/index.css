@@ -498,6 +498,16 @@ body {
   transform-origin: center bottom;
 }
 
+.cursor-buddy-inner.is-poked {
+  animation: mascot-poke 280ms ease-out both;
+}
+
+@keyframes mascot-poke {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  35% { transform: translateY(-5px) rotate(-6deg); }
+  70% { transform: translateY(-2px) rotate(3deg); }
+}
+
 @media (min-width: 640px) {
   .cursor-buddy-root {
     bottom: 24px;

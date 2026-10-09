@@ -93,6 +93,7 @@ export default function App() {
     })
   }, [])
   const [secretVisible, setSecretVisible] = useState(false)
+  const [miningSecretSignal, setMiningSecretSignal] = useState(0)
   const secretProgress = useRef(0)
   const secretTimer = useRef<number | null>(null)
   const location = useLocation()
@@ -131,6 +132,7 @@ export default function App() {
       if (secretProgress.current !== KONAMI_SEQUENCE.length) return
 
       secretProgress.current = 0
+      if (window.location.pathname === '/') setMiningSecretSignal((signal) => signal + 1)
       setSecretVisible(false)
       window.requestAnimationFrame(() => setSecretVisible(true))
       if (secretTimer.current) window.clearTimeout(secretTimer.current)
@@ -155,7 +157,7 @@ export default function App() {
         <Route path="/admin-wall" element={<Suspense fallback={<div className="min-h-screen bg-bg" />}><AdminWall /></Suspense>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {isHomePage && showBuddy && !mining && <Suspense><CursorBuddy onStartMining={() => setMining(true)} /></Suspense>}
+      {isHomePage && showBuddy && !mining && <Suspense><CursorBuddy onStartMining={() => setMining(true)} secretSignal={miningSecretSignal} /></Suspense>}
       {isHomePage && mining && <Suspense><PortfolioMiner onExit={stopMining} /></Suspense>}
       {secretVisible && (
         <div className="secret-reveal" role="status" aria-live="polite">
