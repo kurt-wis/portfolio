@@ -51,7 +51,7 @@ export default function FeaturedProject({ projects }: FeaturedProjectProps) {
           className="relative mb-4 block aspect-[16/10.5] overflow-hidden rounded-xl border border-line bg-bg-soft"
         >
           {current.image ? (
-            <img src={current.image} alt={current.title} className="h-full w-full object-cover" />
+            <img src={current.image} alt={current.title} className={`h-full w-full ${current.imageFit === 'contain' ? 'object-contain p-8' : 'object-cover'}`} />
           ) : (
             <ProjectPlaceholder seed={index} />
           )}

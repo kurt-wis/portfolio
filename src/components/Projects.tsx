@@ -29,7 +29,7 @@ export default function Projects() {
                       <img
                         src={project.image}
                         alt={`${project.title} preview`}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                        className={`h-full w-full transition-transform duration-500 group-hover:scale-[1.02] ${project.imageFit === 'contain' ? 'object-contain p-8' : 'object-cover'}`}
                       />
                     ) : (
                       <ProjectPlaceholder seed={index} />

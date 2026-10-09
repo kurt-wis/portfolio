@@ -59,7 +59,7 @@ export default function ProjectDetail() {
 
           <div className="mt-10 aspect-[16/9] overflow-hidden rounded-[24px] border border-line bg-bg-soft">
             {project.image ? (
-              <img src={project.image} alt={`${project.title} interface`} className="h-full w-full object-cover" />
+              <img src={project.image} alt={`${project.title} ${project.imageFit === 'contain' ? 'logo' : 'preview'}`} className={`h-full w-full ${project.imageFit === 'contain' ? 'object-contain p-8 sm:p-12' : 'object-cover'}`} />
             ) : (
               <ProjectPlaceholder seed={projects.indexOf(project)} className="h-full w-full" />
             )}
@@ -92,7 +92,7 @@ export default function ProjectDetail() {
             <div className="space-y-10">
               <CaseStudySection title="Overview" content={project.desc} />
               {project.challenge && <CaseStudySection title="The challenge" content={project.challenge} />}
-              {project.solution && <CaseStudySection title="What I built" content={project.solution} />}
+              {project.solution && <CaseStudySection title={project.slug === 'study-bunny' ? 'What we built' : 'What I built'} content={project.solution} />}
 
               {project.highlights && project.highlights.length > 0 && (
                 <section>

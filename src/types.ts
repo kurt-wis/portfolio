@@ -2,7 +2,7 @@ export interface Project {
   slug: string
   title: string
   tagline?: string
-  status: 'Completed' | 'In progress'
+  status: 'Completed' | 'In progress' | 'Hackathon prototype'
   type: string
   tech: string
   year: string
@@ -16,6 +16,7 @@ export interface Project {
   url?: string
   repo?: string
   image?: string
+  imageFit?: 'cover' | 'contain'
 }
 
 export interface ExperienceEntry {

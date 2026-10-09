@@ -22,6 +22,37 @@ export const socials: SocialLink[] = [
 
 export const projects: Project[] = [
   {
+    slug: 'study-bunny',
+    title: 'Study Bunny',
+    tagline: 'Turn your notes into a study plan, even offline.',
+    status: 'Hackathon prototype',
+    type: 'Study Companion PWA',
+    tech: 'React, Vite, Tailwind CSS, Dexie, PDF.js',
+    year: '2026',
+    desc: 'An offline-first study companion that turns PDF notes and PowerPoint slides into summaries, quizzes, and flashcard reviews. Students can practice explaining topics, track their progress, and use optional cloud AI for richer feedback.',
+    role: 'Hackathon Team Member',
+    challenge:
+      'Students need more than another place to store their notes. Study Bunny brings practice, revision, and progress tracking into one workspace, with a local study flow that remains usable when an internet connection is unavailable.',
+    solution:
+      'Our team built a React progressive web app with local document processing and IndexedDB storage. It pairs quizzes with topic-mastery estimates, schedules flashcard reviews using spaced repetition, and supports Pomodoro sessions and Feynman explain-it-back practice. Optional AI runs through server-side endpoints; summaries, quizzes, and note retrieval fall back to local algorithms when cloud requests fail. We used Quick for ideation and Kiro for development.',
+    outcome:
+      'Our team earned 1st Runner-Up in the Educational Crisis Track. The overnight hackathon took place at the AWS Office in Bonifacio Global City, Taguig, and Study Bunny is available as a live web app.',
+    highlights: [
+      'PDF and PowerPoint text extraction on the device',
+      'Structured summaries and quizzes focused on weaker topics',
+      'Spaced-repetition flashcards with SM-2 review scheduling',
+      'Pomodoro timer and Feynman explanation practice',
+      'Topic-mastery estimates and learning-curve dashboards',
+      'Ask My Notes with source-based answers and offline passage retrieval',
+      'Reference-based notes checking with redaction previews',
+      'Installable PWA with local storage and optional cloud AI',
+    ],
+    awards: ['1st Runner-Up — Educational Crisis Track'],
+    url: 'https://study-bunny-iota.vercel.app/student',
+    image: '/study-bunny-logo.png',
+    imageFit: 'contain',
+  },
+  {
     slug: 'etickette-platform',
     title: 'eTickette Platform',
     tagline: 'Making campus queues easier to track and manage.',
@@ -102,7 +133,7 @@ export const profile = {
   cvHref: '/resume.pdf',
   stats: [
     { value: '5', label: 'Project Awards' },
-    { value: '02', label: 'Projects' },
+    { value: String(projects.length).padStart(2, '0'), label: 'Projects' },
     { value: '15+', label: 'Technologies' },
   ],
 }
