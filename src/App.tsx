@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import BackgroundGrain from './components/BackgroundGrain'
 import ScrollProgress from './components/ScrollProgress'
@@ -16,6 +16,7 @@ import NotFound from './pages/NotFound'
 const AdminWall = lazy(() => import('./pages/AdminWall'))
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
 const CursorBuddy = lazy(() => import('./components/CursorBuddy'))
+const PortfolioMiner = lazy(() => import('./components/PortfolioMiner'))
 const GitHubActivity = lazy(() => import('./components/GitHubActivity'))
 const KONAMI_SEQUENCE = [
   'arrowup',
@@ -84,11 +85,20 @@ function HomePage() {
 
 export default function App() {
   const [showBuddy, setShowBuddy] = useState(false)
+  const [mining, setMining] = useState(false)
+  const stopMining = useCallback(() => {
+    setMining(false)
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>('.cursor-buddy')?.focus()
+    })
+  }, [])
   const [secretVisible, setSecretVisible] = useState(false)
   const secretProgress = useRef(0)
   const secretTimer = useRef<number | null>(null)
   const location = useLocation()
   const isHomePage = location.pathname === '/'
+
+  useEffect(() => { setMining(false) }, [location.pathname])
 
   useEffect(() => {
     const timerId = setTimeout(() => setShowBuddy(true), 1200)
@@ -145,7 +155,8 @@ export default function App() {
         <Route path="/admin-wall" element={<Suspense fallback={<div className="min-h-screen bg-bg" />}><AdminWall /></Suspense>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {isHomePage && showBuddy && <Suspense><CursorBuddy /></Suspense>}
+      {isHomePage && showBuddy && !mining && <Suspense><CursorBuddy onStartMining={() => setMining(true)} /></Suspense>}
+      {isHomePage && mining && <Suspense><PortfolioMiner onExit={stopMining} /></Suspense>}
       {secretVisible && (
         <div className="secret-reveal" role="status" aria-live="polite">
           <div className="secret-reveal__mark" aria-hidden="true">WIS.</div>

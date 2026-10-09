@@ -46,7 +46,7 @@ const getInitialCooldown = () => {
   return Math.max(0, Math.ceil((COOLDOWN_MS - elapsed) / 1000));
 }
 
-export default function CursorBuddy() {
+export default function CursorBuddy({ onStartMining }: { onStartMining: () => void }) {
   const [phrase, setPhrase] = useState('')
   const [showBubble, setShowBubble] = useState(false)
   const [shouldIntroduce] = useState(
@@ -336,6 +336,12 @@ export default function CursorBuddy() {
                 {isSubmitting ? '...' : !userId ? 'Connecting…' : cooldownRemaining > 0 ? `${cooldownRemaining}s` : 'Post'}
               </button>
             </div>
+          </div>
+          <div className="mt-4 border-t border-gray-100 pt-3 dark:border-zinc-800">
+            <button type="button" onClick={onStartMining} className="min-h-11 w-full rounded-md border border-gray-200 px-3 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-100 dark:border-zinc-700 dark:text-gray-200 dark:hover:bg-zinc-800">
+              Mine this page
+            </button>
+            <p className="mt-2 text-xs text-gray-500">A little demolition. Everything restores when you exit.</p>
           </div>
         </div>}
 

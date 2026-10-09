@@ -2,6 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+.portfolio-miner {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  pointer-events: none;
+}
+
+.portfolio-miner__surface {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  touch-action: pan-y;
+  cursor: crosshair;
+  background-image: linear-gradient(to right, rgb(var(--ink) / 10%) 1px, transparent 1px), linear-gradient(to bottom, rgb(var(--ink) / 10%) 1px, transparent 1px);
+}
+
+.portfolio-miner__tile { position: absolute; pointer-events: none; }
+.portfolio-miner__tile.is-broken {
+  background: rgb(var(--bg-soft-2));
+  box-shadow: inset 0 0 0 1px rgb(var(--line-strong)), inset 0 3px 12px rgb(0 0 0 / 12%);
+}
+.portfolio-miner__crack { width: 100%; height: 100%; stroke: rgb(var(--ink)); stroke-width: 1.5; filter: drop-shadow(0 1px 0 rgb(var(--bg))); }
+
+.portfolio-miner__character {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  transition: left 240ms ease-out, top 240ms ease-out;
+}
+
+.portfolio-miner__character img { width: 100%; height: 100%; object-fit: contain; }
+.dark .portfolio-miner__character img { filter: invert(1) hue-rotate(180deg); }
+.portfolio-miner__pickaxe {
+  position: absolute;
+  right: -22px;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  transform-origin: 12px 39px;
+  transform: rotate(-30deg);
+}
+.is-striking .portfolio-miner__pickaxe { animation: mining-strike 300ms ease-in-out; }
+.is-striking img { animation: mining-bounce 300ms ease-in-out; }
+
+.portfolio-miner__controls {
+  position: absolute;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(580px, calc(100% - 32px));
+  padding: 16px;
+  border: 1px solid rgb(var(--line-strong));
+  border-radius: 16px;
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
+  box-shadow: 0 12px 40px rgb(0 0 0 / 15%);
+  pointer-events: auto;
+}
+.portfolio-miner__label { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 700; }
+.portfolio-miner__label span { color: rgb(var(--ink-soft)); font-weight: 400; font-variant-numeric: tabular-nums; }
+.portfolio-miner__info p { margin: 4px 0 12px; font-size: 12px; line-height: 1.5; color: rgb(var(--ink-soft)); }
+.portfolio-miner__actions { display: flex; gap: 8px; }
+.portfolio-miner__actions button { flex: 1; min-height: 44px; border: 1px solid rgb(var(--line-strong)); border-radius: 9px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+.portfolio-miner__actions button:last-child { background: rgb(var(--ink)); color: rgb(var(--bg)); border-color: transparent; }
+.portfolio-miner__actions button:focus-visible { outline: 2px solid rgb(var(--ink)); outline-offset: 3px; }
+.portfolio-miner__actions button:disabled { opacity: 0.5; }
+
+.portfolio-miner__chips { position: absolute; width: 0; height: 0; }
+.portfolio-miner__chips i { position: absolute; width: 7px; height: 7px; background: rgb(var(--ink-soft)); border: 1px solid rgb(var(--line-strong)); animation: mining-chip 700ms ease-out both; }
+@keyframes mining-strike { 0% { transform: rotate(-30deg); } 45% { transform: rotate(-85deg); } 65% { transform: rotate(35deg); } 100% { transform: rotate(-30deg); } }
+@keyframes mining-bounce { 50% { transform: translateY(-4px) rotate(-5deg); } }
+@keyframes mining-chip { to { transform: translate(var(--chip-x), var(--chip-y)) rotate(var(--chip-turn)); opacity: 0; } }
+
 :root {
   --bg: 255 255 255;
   --bg-soft: 246 246 244;
